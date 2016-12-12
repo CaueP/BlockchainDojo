@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"encoding/json"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	
@@ -34,6 +35,15 @@ import (
 
 // BoletoPropostaChaincode - implementacao do chaincode
 type BoletoPropostaChaincode struct {
+}
+
+// Tipo Proposta para retornar a consulta JSON
+type Proposta struct {
+    id int `json:"id_proposta"`
+	cpfPagador string `json:"cpf_pagador"`
+	pagadorAceitou bool `json:"pagador_aceitou"`
+	beneficiarioAceitou bool `json:"beneficiario_aceitou"`
+	boletoPago bool `json:"boleto_pago"`
 }
 
 // ============================================================================================================================
@@ -155,6 +165,39 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 	return nil, err
 }
 
+// consultarProposta: função Query para consultar uma proposta existente, recebendo os seguintes argumentos
+// args[0]: Id. Hash da proposta
+//
+func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	//myLogger.Debug("consultarProposta...")
+	fmt.Println("consultarProposta...")
+
+	// Verifica se a quantidade de argumentos recebidas corresponde a esperada
+	if len(args) != 1 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+	}
+
+	// Obtem os valores dos argumentos e os prepara para salvar na tabela 'Proposta'
+	idProposta := args[0]
+
+	// [To do] verificar identidade
+
+	// Define o valor de coluna a ser buscado
+	var columns []shim.Column
+	col1 := shim.Column{Value: &shim.Column_String_{String_: idProposta}}
+	columns = append(columns, col1)
+
+	// Consulta a proposta na tabela 'Proposta'
+	row, err := stub.GetRow("Proposta", columns)
+	if err != nil {
+		fmt.Println("Erro ao obter Proposta [%s]: [%s]", string(idProposta), err)
+		return nil, fmt.Errorf("Erro ao obter Proposta [%s]: [%s]", string(idProposta), err)
+	}
+
+	fmt.Println("Query finalizada [% x]", row.Columns[1].GetBytes())
+
+	return row.Columns[1].GetBytes(), nil
+}
 
 // Invoke will be called for every transaction.
 // Supported functions are the following:
@@ -177,9 +220,6 @@ func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, funct
 	} else if function == "registrarProposta" {
 		// Registrar nova Proposta
 		return t.registrarProposta(stub, args)
-	} else if function == "consultarProposta" {
-		// Consultar uma Proposta existente
-		//return t.consultarProposta(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function) //error
 
@@ -194,9 +234,9 @@ func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, functi
 	fmt.Println("query is running " + function)
 
 	// Handle different functions
-	if function == "dummy_query" { //read a variable
-		fmt.Println("hi there " + function) //error
-		return nil, nil
+	if function == "consultarProposta" { //read a variable
+		// Consultar uma Proposta existente
+		return t.consultarProposta(stub, args)
 	}
 	fmt.Println("query did not find func: " + function) //error
 
