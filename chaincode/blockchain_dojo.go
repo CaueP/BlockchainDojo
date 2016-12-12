@@ -21,13 +21,14 @@ Implementação iniciada por Caue Garcia Polimanti e Vitor Diego dos Santos de S
 package main
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	
 )
+//	"encoding/base64"
 // "github.com/op/go-logging"
 //var myLogger = logging.MustGetLogger("dojo_mgm")
 
@@ -75,13 +76,13 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 		// Identificador da proposta (hash)
 		&shim.ColumnDefinition{Name: "Id", Type: shim.ColumnDefinition_STRING, Key: true},
 		// CPF do Pagador
-		&shim.ColumnDefinition{Name: "cpfPagador", Type: shim.ColumnDefinition_BYTES, Key: false},
+		&shim.ColumnDefinition{Name: "cpfPagador", Type: shim.ColumnDefinition_BOOL, Key: false},
 		// Status de aceite do Pagador da proposta
-		&shim.ColumnDefinition{Name: "statusAceitePagador", Type: shim.ColumnDefinition_BYTES, Key: false},
+		&shim.ColumnDefinition{Name: "pagadorAceitou", Type: shim.ColumnDefinition_BOOL, Key: false},
 		// Status de aceite do Beneficiario da proposta
-		&shim.ColumnDefinition{Name: "statusAceiteBeneficiario", Type: shim.ColumnDefinition_BYTES, Key: false},
+		&shim.ColumnDefinition{Name: "beneficiarioAceitou", Type: shim.ColumnDefinition_BOOL, Key: false},
 		// Status do Pagamento do Boleto
-		&shim.ColumnDefinition{Name: "statusPagamentoBoleto", Type: shim.ColumnDefinition_BYTES, Key: false},
+		&shim.ColumnDefinition{Name: "boletoPago", Type: shim.ColumnDefinition_BOOL, Key: false},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("Falha ao criar a tabela 'Proposta'. [%v]", err)
@@ -96,9 +97,9 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 // registrarProposta: função Invoke para registrar uma nova proposta, recebendo os seguintes argumentos
 // args[0]: Id. Hash que identificará a proposta
 // args[1]: cpfPagador. CPF do Pagador
-// args[2]: statusAceitePagador. Status de aceite do Pagador da proposta
-// args[3]: statusAceiteBeneficiario. Status de aceite do Beneficiario da proposta
-// args[4]: statusPagamentoBoleto. Status do Pagamento do Boleto
+// args[2]: pagadorAceitou. Status de aceite do Pagador da proposta
+// args[3]: beneficiarioAceitou. Status de aceite do Beneficiario da proposta
+// args[4]: boletoPago. Status do Pagamento do Boleto
 //
 func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//myLogger.Debug("registrarProposta...")
@@ -111,21 +112,18 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 
 	// Obtem os valores dos argumentos e os prepara para salvar na tabela 'Proposta'
 	idProposta := args[0]
-	cpfPagador, err := base64.StdEncoding.DecodeString(args[1])
+	cpfPagador := args[1]
+	pagadorAceitou, err := strconv.ParseBool(args[2])
 	if err != nil {
-		return nil, errors.New("Failed decodinf cpfPagador")
+		return nil, errors.New("Failed decodinf pagadorAceitou")
 	}
-	statusAceitePagador, err := base64.StdEncoding.DecodeString(args[2])
+	beneficiarioAceitou, err := strconv.ParseBool(args[3])
 	if err != nil {
-		return nil, errors.New("Failed decodinf statusAceitePagador")
+		return nil, errors.New("Failed decodinf beneficiarioAceitou")
 	}
-	statusAceiteBeneficiario, err := base64.StdEncoding.DecodeString(args[3])
+	boletoPago, err := strconv.ParseBool(args[4])
 	if err != nil {
-		return nil, errors.New("Failed decodinf statusAceiteBeneficiario")
-	}
-	statusPagamentoBoleto, err := base64.StdEncoding.DecodeString(args[4])
-	if err != nil {
-		return nil, errors.New("Failed decodinf statusPagamentoBoleto")
+		return nil, errors.New("Failed decodinf boletoPago")
 	}
 
 	// [To do] verificar identidade
@@ -137,10 +135,10 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 	ok, err := stub.InsertRow("Proposta", shim.Row{
 		Columns: []*shim.Column{
 			&shim.Column{Value: &shim.Column_String_{String_: idProposta}},
-			&shim.Column{Value: &shim.Column_Bytes{Bytes: cpfPagador}},
-			&shim.Column{Value: &shim.Column_Bytes{Bytes: statusAceitePagador}},
-			&shim.Column{Value: &shim.Column_Bytes{Bytes: statusAceiteBeneficiario}},
-			&shim.Column{Value: &shim.Column_Bytes{Bytes: statusPagamentoBoleto}} },
+			&shim.Column{Value: &shim.Column_String_{String_: cpfPagador}},
+			&shim.Column{Value: &shim.Column_Bool{Bool: pagadorAceitou}},
+			&shim.Column{Value: &shim.Column_Bool{Bool: beneficiarioAceitou}},
+			&shim.Column{Value: &shim.Column_Bool{Bool: boletoPago}} },
 	})
 
 	if !ok && err == nil {
@@ -157,8 +155,8 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 // Invoke will be called for every transaction.
 // Supported functions are the following:
 // "init": initialize the chaincode state, used as reset
-// "registrarProposta(Id, cpfPagador, statusAceitePagador, 
-// statusAceiteBeneficiario, statusPagamentoBoleto)": para registrar uma nova proposta.
+// "registrarProposta(Id, cpfPagador, pagadorAceitou, 
+// beneficiarioAceitou, boletoPago)": para registrar uma nova proposta.
 // Only an administrator can call this function.
 // "consultarProposta(Id)": para consultar uma Proposta. 
 // Only the owner of the specific asset can call this function.
