@@ -131,6 +131,9 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 	// Registra a proposta na tabela 'Proposta'
 	//myLogger.Debugf("Criando Proposta Id [%s] para CPF nº [%s]", idProposta, cpfPagador)
 	fmt.Println("Criando Proposta Id [%s] para CPF nº [%s]", idProposta, cpfPagador)
+	fmt.Printf("pagadorAceitou: " + strconv.FormatBool(pagadorAceitou)) 
+	fmt.Printf(" | beneficiarioAceitou: " + strconv.FormatBool(beneficiarioAceitou))
+	fmt.Printf(" | boletoPago: " + strconv.FormatBool(boletoPago))
 
 	ok, err := stub.InsertRow("Proposta", shim.Row{
 		Columns: []*shim.Column{
