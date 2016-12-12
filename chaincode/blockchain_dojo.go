@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"encoding/json"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	
@@ -34,6 +35,15 @@ import (
 
 // BoletoPropostaChaincode - implementacao do chaincode
 type BoletoPropostaChaincode struct {
+}
+
+// Tipo Proposta para retornar a consulta JSON
+type Proposta struct {
+    id int `json:"id_proposta"`
+	cpfPagador string `json:"cpf_pagador"`
+	pagadorAceitou bool `json:"pagador_aceitou"`
+	beneficiarioAceitou bool `json:"beneficiario_aceitou"`
+	boletoPago bool `json:"boleto_pago"`
 }
 
 // ============================================================================================================================
@@ -162,6 +172,8 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	//myLogger.Debug("consultarProposta...")
 	fmt.Println("consultarProposta...")
 
+	var valAsBytes []byte
+
 	// Verifica se a quantidade de argumentos recebidas corresponde a esperada
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
@@ -186,7 +198,18 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 
 	fmt.Println("Query finalizada [% x]", row.Columns[1].GetBytes())
 
-	return row.Columns[1].GetBytes(), nil
+	// objeto Proposta
+	var resProposta Proposta
+	json.Unmarshal(row.Columns[0].GetBytes(), resProposta.id)
+	json.Unmarshal(row.Columns[1].GetBytes(), resProposta.cpfPagador)
+	json.Unmarshal(row.Columns[2].GetBytes(), resProposta.pagadorAceitou)
+	json.Unmarshal(row.Columns[3].GetBytes(), resProposta.beneficiarioAceitou)
+	json.Unmarshal(row.Columns[4].GetBytes(), resProposta.boletoPago)
+
+	fmt.Println("Proposta: [%s], [%b], [%b], [%b]", resProposta.cpfPagador, resProposta.pagadorAceitou, resProposta.beneficiarioAceitou, resProposta.boletoPago)
+
+	valAsBytes, err = json.Marshal(resProposta)
+	return valAsBytes, nil
 }
 
 // Invoke will be called for every transaction.
