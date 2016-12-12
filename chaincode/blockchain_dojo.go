@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/*
+Implementação iniciada por Caue Garcia Polimanti e Vitor Diego dos Santos de Sousa
+*/
+
 package main
 
 import (
@@ -73,7 +77,73 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 	return nil, nil
 }
 
-// Invoke is our entry point to invoke a chaincode function
+// registrarProposta: função Invoke para registrar uma nova proposta, recebendo os seguintes argumentos
+// args[0]: Id. Hash que identificará a proposta
+// args[1]: cpfPagador. CPF do Pagador
+// args[2]: statusAceitePagador. Status de aceite do Pagador da proposta
+// args[3]: statusAceiteBeneficiario. Status de aceite do Beneficiario da proposta
+// args[4]: statusPagamentoBoleto. Status do Pagamento do Boleto
+//
+func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	myLogger.Debug("registrarProposta...")
+
+	// Verifica se a quantidade de argumentos recebidas corresponde a esperada
+	if len(args) != 5 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 5")
+	}
+
+	// Obtem os valores dos argumentos e os prepara para salvar na tabela 'Proposta'
+	idProposta := args[0]
+	cpfPagador, err := base64.StdEncoding.DecodeString(args[1])
+	if err != nil {
+		return nil, errors.New("Failed decodinf cpfPagador")
+	}
+	statusAceitePagador, err := base64.StdEncoding.DecodeString(args[2])
+	if err != nil {
+		return nil, errors.New("Failed decodinf statusAceitePagador")
+	}
+	statusAceiteBeneficiario, err := base64.StdEncoding.DecodeString(args[3])
+	if err != nil {
+		return nil, errors.New("Failed decodinf statusAceiteBeneficiario")
+	}
+	statusPagamentoBoleto, err := base64.StdEncoding.DecodeString(args[4])
+	if err != nil {
+		return nil, errors.New("Failed decodinf statusPagamentoBoleto")
+	}
+
+	// [To do] verificar identidade
+
+	// Registra a proposta na tabela 'Proposta'
+	myLogger.Debugf("Proposta criada [%s] para CPF nº [%s]", idProposta, cpfPagador)
+
+	ok, err := stub.InsertRow("Proposta", shim.Row{
+		Columns: []*shim.Column{
+			&shim.Column{Value: &shim.Column_String_{String_: idProposta}},
+			&shim.Column{Value: &shim.Column_Bytes{Bytes: cpfPagador}},
+			&shim.Column{Value: &shim.Column_Bytes{Bytes: statusAceitePagador}},
+			&shim.Column{Value: &shim.Column_Bytes{Bytes: statusAceiteBeneficiario}},
+			&shim.Column{Value: &shim.Column_Bytes{Bytes: statusPagamentoBoleto}}},
+	})
+
+	if !ok && err == nil {
+		return nil, errors.New("Proposta já existente.")
+	}
+
+	myLogger.Debug("Proposta criada!")
+
+	return nil, err
+}
+
+
+// Invoke will be called for every transaction.
+// Supported functions are the following:
+// "init": initialize the chaincode state, used as reset
+// "registrarProposta(Id, cpfPagador, statusAceitePagador, 
+// statusAceiteBeneficiario, statusPagamentoBoleto)": para registrar uma nova proposta.
+// Only an administrator can call this function.
+// "consultarProposta(Id)": para consultar uma Proposta. 
+// Only the owner of the specific asset can call this function.
+// An asset is any string to identify it. An owner is representated by one of his ECert/TCert.
 func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	myLogger.Debug("Invoke Chaincode...")
 
@@ -83,10 +153,10 @@ func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, funct
 	if function == "init" { //initialize the chaincode state, used as reset
 		return t.Init(stub, "init", args)
 	} else if function == "registrarProposta" {
-		// Transfer ownership
+		// Registrar nova Proposta
 		return t.registrarProposta(stub, args)
 	} else if function == "consultarProposta" {
-		// Transfer ownership
+		// Consultar uma Proposta existente
 		return t.consultarProposta(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function) //error
