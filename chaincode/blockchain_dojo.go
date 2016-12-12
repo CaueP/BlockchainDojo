@@ -60,7 +60,7 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 	fmt.Println("Verificando se a tabela 'Proposta' existe...")
 	tbProposta, err := stub.GetTable("Proposta")
 	if err != nil {
-		return nil, fmt.Errorf("Falha ao executar stub.GetTable para a tabela 'Proposta'. [%v]", err)
+		fmt.Println("Falha ao executar stub.GetTable para a tabela 'Proposta'. [%v]", err)
 	}
 	// Se a tabela 'Proposta' já existir
 	if tbProposta != nil {	
