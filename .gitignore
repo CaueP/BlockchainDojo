@@ -1,0 +1,4 @@
+/node_modules/
+*.orig
+*.exe
+/chaincode/blockchain_dojo
