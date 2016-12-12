@@ -56,23 +56,37 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 		return nil, errors.New("Incorrect number of arguments. Expecting 0")
 	}
 
-	// Criar tabela de Propostas
-	// Identificador da proposta (hash)
-	// CPF do Pagador
-	// Status de aceite do Pagador da proposta
-	// Status de aceite do Beneficiario da proposta
-	// Status do Pagamento do Boleto	
-	err := stub.CreateTable("Proposta", []*shim.ColumnDefinition{
+	// Verifica se a tabela 'Proposta' existe
+	fmt.Println("Verificando se a tabela 'Proposta' existe...")
+	tbProposta, err := stub.GetTable("Proposta")
+	if err != nil {
+		return nil, fmt.Errorf("Falha ao executar stub.GetTable para a tabela 'Proposta'. [%v]", err)
+	}
+	// Se a tabela 'Proposta' já existir
+	if tbProposta != nil {	
+		err = stub.DeleteTable("Proposta")		// Excluir a tabela
+		fmt.Println("Tabela 'Proposta' excluída.")
+	}
+
+
+	fmt.Println("Criando a tabela 'Proposta'...")
+	// Criar tabela de Propostas	
+	err = stub.CreateTable("Proposta", []*shim.ColumnDefinition{
+		// Identificador da proposta (hash)
 		&shim.ColumnDefinition{Name: "Id", Type: shim.ColumnDefinition_STRING, Key: true},
+		// CPF do Pagador
 		&shim.ColumnDefinition{Name: "cpfPagador", Type: shim.ColumnDefinition_BYTES, Key: false},
+		// Status de aceite do Pagador da proposta
 		&shim.ColumnDefinition{Name: "statusAceitePagador", Type: shim.ColumnDefinition_BYTES, Key: false},
+		// Status de aceite do Beneficiario da proposta
 		&shim.ColumnDefinition{Name: "statusAceiteBeneficiario", Type: shim.ColumnDefinition_BYTES, Key: false},
+		// Status do Pagamento do Boleto
 		&shim.ColumnDefinition{Name: "statusPagamentoBoleto", Type: shim.ColumnDefinition_BYTES, Key: false},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("Falha ao criar a tabela 'Proposta'. [%v]", err)
-		//return nil, errors.New("Falha ao criar a tabela 'Proposta'.")
-	}
+	} 
+	fmt.Println("Tabela 'Proposta' criada com sucesso.")
 
 	fmt.Println("Init Chaincode... Finalizado!")
 
