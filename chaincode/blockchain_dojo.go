@@ -17,28 +17,36 @@ limitations under the License.
 package main
 
 import (
+	"os"
+	"encoding/base64"
 	"errors"
 	"fmt"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/core/crypto/primitives"
+	"github.com/op/go-logging"
 )
 
-// SimpleChaincode example simple Chaincode implementation
-type SimpleChaincode struct {
+var myLogger = logging.MustGetLogger("dojo_mgm")
+
+// BoletoPropostaChaincode example simple Chaincode implementation
+type BoletoPropostaChaincode struct {
 }
 
 // ============================================================================================================================
 // Main
 // ============================================================================================================================
 func main() {
-	err := shim.Start(new(SimpleChaincode))
+	err := shim.Start(new(BoletoPropostaChaincode))
 	if err != nil {
 		fmt.Printf("Error starting Simple chaincode: %s", err)
 	}
 }
 
 // Init resets all the things
-func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	myLogger.Debug("Init Chaincode...")
+
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
 	}
@@ -47,7 +55,9 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 }
 
 // Invoke is our entry point to invoke a chaincode function
-func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	myLogger.Debug("Invoke Chaincode...")
+
 	fmt.Println("invoke is running " + function)
 
 	// Handle different functions
@@ -60,7 +70,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 }
 
 // Query is our entry point for queries
-func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	myLogger.Debug("Query Chaincode...")
+
 	fmt.Println("query is running " + function)
 
 	// Handle different functions
