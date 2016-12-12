@@ -29,7 +29,7 @@ import (
 
 var myLogger = logging.MustGetLogger("dojo_mgm")
 
-// BoletoPropostaChaincode example simple Chaincode implementation
+// BoletoPropostaChaincode - implementacao do chaincode
 type BoletoPropostaChaincode struct {
 }
 
@@ -82,6 +82,12 @@ func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, funct
 	// Handle different functions
 	if function == "init" { //initialize the chaincode state, used as reset
 		return t.Init(stub, "init", args)
+	} else if function == "registrarProposta" {
+		// Transfer ownership
+		return t.registrarProposta(stub, args)
+	} else if function == "consultarProposta" {
+		// Transfer ownership
+		return t.consultarProposta(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function) //error
 
