@@ -76,7 +76,7 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 		// Identificador da proposta (hash)
 		&shim.ColumnDefinition{Name: "Id", Type: shim.ColumnDefinition_STRING, Key: true},
 		// CPF do Pagador
-		&shim.ColumnDefinition{Name: "cpfPagador", Type: shim.ColumnDefinition_BOOL, Key: false},
+		&shim.ColumnDefinition{Name: "cpfPagador", Type: shim.ColumnDefinition_STRING, Key: false},
 		// Status de aceite do Pagador da proposta
 		&shim.ColumnDefinition{Name: "pagadorAceitou", Type: shim.ColumnDefinition_BOOL, Key: false},
 		// Status de aceite do Beneficiario da proposta
@@ -133,7 +133,7 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 	fmt.Println("Criando Proposta Id [%s] para CPF nº [%s]", idProposta, cpfPagador)
 	fmt.Printf("pagadorAceitou: " + strconv.FormatBool(pagadorAceitou)) 
 	fmt.Printf(" | beneficiarioAceitou: " + strconv.FormatBool(beneficiarioAceitou))
-	fmt.Printf(" | boletoPago: " + strconv.FormatBool(boletoPago))
+	fmt.Printf(" | boletoPago: " + strconv.FormatBool(boletoPago) + "\n")
 
 	ok, err := stub.InsertRow("Proposta", shim.Row{
 		Columns: []*shim.Column{
