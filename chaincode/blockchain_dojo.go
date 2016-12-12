@@ -41,7 +41,7 @@ type BoletoPropostaChaincode struct {
 func main() {
 	err := shim.Start(new(BoletoPropostaChaincode))
 	if err != nil {
-		fmt.Printf("Error starting Simple chaincode: %s", err)
+		fmt.Printf("Error starting BoletoPropostaChaincode chaincode: %s", err)
 	}
 }
 
@@ -53,7 +53,7 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 	// Verificação da quantidad de argumentos recebidas
 	// Não estamos recebendo nenhum argumento
 	if len(args) != 0 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+		return nil, errors.New("Incorrect number of arguments. Expecting 0")
 	}
 
 	// Criar tabela de Propostas
@@ -70,8 +70,10 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 		&shim.ColumnDefinition{Name: "statusPagamentoBoleto", Type: shim.ColumnDefinition_BYTES, Key: false},
 	})
 	if err != nil {
-		return nil, errors.New("Failed creating AssetsOnwership table.")
+		return nil, errors.New("Falha ao criar a tabela 'Proposta'.")
 	}
+
+	fmt.Println("Init Chaincode... Finalizado!")
 
 	return nil, nil
 }
