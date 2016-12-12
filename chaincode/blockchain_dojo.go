@@ -26,10 +26,10 @@ import (
 	"fmt"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"github.com/op/go-logging"
+	
 )
-
-var myLogger = logging.MustGetLogger("dojo_mgm")
+// "github.com/op/go-logging"
+//var myLogger = logging.MustGetLogger("dojo_mgm")
 
 // BoletoPropostaChaincode - implementacao do chaincode
 type BoletoPropostaChaincode struct {
@@ -47,7 +47,8 @@ func main() {
 
 // Init resets all the things
 func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	myLogger.Debug("Init Chaincode...")
+	//myLogger.Debug("Init Chaincode...")
+	fmt.Println("Init Chaincode...")
 
 	// Verificação da quantidad de argumentos recebidas
 	// Não estamos recebendo nenhum argumento
@@ -83,7 +84,8 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 // args[4]: statusPagamentoBoleto. Status do Pagamento do Boleto
 //
 func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	myLogger.Debug("registrarProposta...")
+	//myLogger.Debug("registrarProposta...")
+	fmt.Println("registrarProposta...")
 
 	// Verifica se a quantidade de argumentos recebidas corresponde a esperada
 	if len(args) != 5 {
@@ -112,7 +114,8 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 	// [To do] verificar identidade
 
 	// Registra a proposta na tabela 'Proposta'
-	myLogger.Debugf("Criando Proposta Id [%s] para CPF nº [%s]", idProposta, cpfPagador)
+	//myLogger.Debugf("Criando Proposta Id [%s] para CPF nº [%s]", idProposta, cpfPagador)
+	fmt.Println("Criando Proposta Id [%s] para CPF nº [%s]", idProposta, cpfPagador)
 
 	ok, err := stub.InsertRow("Proposta", shim.Row{
 		Columns: []*shim.Column{
@@ -127,7 +130,8 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 		return nil, errors.New("Proposta já existente.")
 	}
 
-	myLogger.Debug("Proposta criada!")
+	//myLogger.Debug("Proposta criada!")
+	fmt.Println("Proposta criada!")
 
 	return nil, err
 }
@@ -143,7 +147,8 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 // Only the owner of the specific asset can call this function.
 // An asset is any string to identify it. An owner is representated by one of his ECert/TCert.
 func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	myLogger.Debug("Invoke Chaincode...")
+	//myLogger.Debug("Invoke Chaincode...")
+	fmt.Println("Invoke Chaincode...")
 
 	fmt.Println("invoke is running " + function)
 
@@ -164,7 +169,8 @@ func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, funct
 
 // Query is our entry point for queries
 func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	myLogger.Debug("Query Chaincode...")
+	//myLogger.Debug("Query Chaincode...")
+	fmt.Println("Query Chaincode...")
 
 	fmt.Println("query is running " + function)
 
