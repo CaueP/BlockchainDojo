@@ -21,13 +21,11 @@ Implementação iniciada por Caue Garcia Polimanti e Vitor Diego dos Santos de S
 package main
 
 import (
-	"os"
 	"encoding/base64"
 	"errors"
 	"fmt"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"github.com/hyperledger/fabric/core/crypto/primitives"
 	"github.com/op/go-logging"
 )
 
@@ -157,7 +155,7 @@ func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, funct
 		return t.registrarProposta(stub, args)
 	} else if function == "consultarProposta" {
 		// Consultar uma Proposta existente
-		return t.consultarProposta(stub, args)
+		//return t.consultarProposta(stub, args)
 	}
 	fmt.Println("invoke did not find func: " + function) //error
 
