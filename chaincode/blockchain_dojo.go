@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"encoding/json"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	
@@ -35,15 +34,6 @@ import (
 
 // BoletoPropostaChaincode - implementacao do chaincode
 type BoletoPropostaChaincode struct {
-}
-
-// Tipo Proposta para retornar a consulta JSON
-type Proposta struct {
-    id int `json:"id_proposta"`
-	cpfPagador string `json:"cpf_pagador"`
-	pagadorAceitou bool `json:"pagador_aceitou"`
-	beneficiarioAceitou bool `json:"beneficiario_aceitou"`
-	boletoPago bool `json:"boleto_pago"`
 }
 
 // ============================================================================================================================
