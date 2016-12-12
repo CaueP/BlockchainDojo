@@ -57,20 +57,21 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 	}
 
 	// Criar tabela de Propostas
+	// Identificador da proposta (hash)
+	// CPF do Pagador
+	// Status de aceite do Pagador da proposta
+	// Status de aceite do Beneficiario da proposta
+	// Status do Pagamento do Boleto	
 	err := stub.CreateTable("Proposta", []*shim.ColumnDefinition{
-		// Identificador da proposta (hash)
 		&shim.ColumnDefinition{Name: "Id", Type: shim.ColumnDefinition_STRING, Key: true},
-		// CPF do Pagador
 		&shim.ColumnDefinition{Name: "cpfPagador", Type: shim.ColumnDefinition_BYTES, Key: false},
-		// Status de aceite do Pagador da proposta
 		&shim.ColumnDefinition{Name: "statusAceitePagador", Type: shim.ColumnDefinition_BYTES, Key: false},
-		// Status de aceite do Beneficiario da proposta
 		&shim.ColumnDefinition{Name: "statusAceiteBeneficiario", Type: shim.ColumnDefinition_BYTES, Key: false},
-		// Status do Pagamento do Boleto
 		&shim.ColumnDefinition{Name: "statusPagamentoBoleto", Type: shim.ColumnDefinition_BYTES, Key: false},
 	})
 	if err != nil {
-		return nil, errors.New("Falha ao criar a tabela 'Proposta'.")
+		return nil, fmt.Errorf("Falha ao criar a tabela 'Proposta'. [%v]", err)
+		//return nil, errors.New("Falha ao criar a tabela 'Proposta'.")
 	}
 
 	fmt.Println("Init Chaincode... Finalizado!")
