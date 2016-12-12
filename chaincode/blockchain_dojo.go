@@ -114,7 +114,7 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 	// [To do] verificar identidade
 
 	// Registra a proposta na tabela 'Proposta'
-	myLogger.Debugf("Proposta criada [%s] para CPF nº [%s]", idProposta, cpfPagador)
+	myLogger.Debugf("Criando Proposta Id [%s] para CPF nº [%s]", idProposta, cpfPagador)
 
 	ok, err := stub.InsertRow("Proposta", shim.Row{
 		Columns: []*shim.Column{
@@ -122,7 +122,7 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 			&shim.Column{Value: &shim.Column_Bytes{Bytes: cpfPagador}},
 			&shim.Column{Value: &shim.Column_Bytes{Bytes: statusAceitePagador}},
 			&shim.Column{Value: &shim.Column_Bytes{Bytes: statusAceiteBeneficiario}},
-			&shim.Column{Value: &shim.Column_Bytes{Bytes: statusPagamentoBoleto}}},
+			&shim.Column{Value: &shim.Column_Bytes{Bytes: statusPagamentoBoleto}} },
 	})
 
 	if !ok && err == nil {
