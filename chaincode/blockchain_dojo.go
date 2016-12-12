@@ -47,8 +47,27 @@ func main() {
 func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	myLogger.Debug("Init Chaincode...")
 
-	if len(args) != 1 {
+	// Verificação da quantidad de argumentos recebidas
+	// Não estamos recebendo nenhum argumento
+	if len(args) != 0 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+	}
+
+	// Criar tabela de Propostas
+	err := stub.CreateTable("Proposta", []*shim.ColumnDefinition{
+		// Identificador da proposta (hash)
+		&shim.ColumnDefinition{Name: "Id", Type: shim.ColumnDefinition_STRING, Key: true},
+		// CPF do Pagador
+		&shim.ColumnDefinition{Name: "cpfPagador", Type: shim.ColumnDefinition_BYTES, Key: false},
+		// Status de aceite do Pagador da proposta
+		&shim.ColumnDefinition{Name: "statusAceitePagador", Type: shim.ColumnDefinition_BYTES, Key: false},
+		// Status de aceite do Beneficiario da proposta
+		&shim.ColumnDefinition{Name: "statusAceiteBeneficiario", Type: shim.ColumnDefinition_BYTES, Key: false},
+		// Status do Pagamento do Boleto
+		&shim.ColumnDefinition{Name: "statusPagamentoBoleto", Type: shim.ColumnDefinition_BYTES, Key: false},
+	})
+	if err != nil {
+		return nil, errors.New("Failed creating AssetsOnwership table.")
 	}
 
 	return nil, nil
