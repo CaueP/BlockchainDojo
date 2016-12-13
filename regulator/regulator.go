@@ -57,8 +57,19 @@ type Transacao struct{
 type SimpleChaincode struct {
 }
 
+// ============================================================================================================================
+// Main
+// ============================================================================================================================
+func main() {
+	err := shim.Start(new(SimpleChaincode))
+	if err != nil {
+		fmt.Printf("Error starting Simple chaincode: %s", err)
+	}
+}
+
 // Init resets all the things
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface,function string,args []string) ([]byte, error) {
+	fmt.Println("Init Chaincode...")
 	if len(args) != 0 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 0")
 	}
@@ -87,7 +98,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface,function string,
 
 	stub.PutState("admin", adminCert)
 
-	return nil, nil
+	return nil, err
 }
 
 // Invoke is our entry point to invoke a chaincode function
@@ -149,14 +160,4 @@ func (t *SimpleChaincode) getTransaction(stub shim.ChaincodeStubInterface, args 
 	fmt.Printf("[getTransaction] Regulator authorized! [%v]" , args[1])
 
     return nil,nil
-}
-
-// ============================================================================================================================
-// Main
-// ============================================================================================================================
-func main() {
-	err := shim.Start(new(SimpleChaincode))
-	if err != nil {
-		fmt.Printf("Error starting Simple chaincode: %s", err)
-	}
 }
