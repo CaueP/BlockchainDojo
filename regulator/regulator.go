@@ -28,7 +28,7 @@ func main() {
 		fmt.Printf("Error starting Simple chaincode: %s", err)
 	}
 	    
-	err := initCryptoClients()
+	err = initCryptoClients()
 	if err != nil {
 		fmt.Printf("Failed initializing clients [%s]", err)
 	}
