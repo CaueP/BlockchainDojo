@@ -60,8 +60,8 @@ func main() {
 func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	//myLogger.Debug("Init Chaincode...")
 	fmt.Println("Init Chaincode...")
-
-	// Verificação da quantidad de argumentos recebidas
+    
+	// Verificação da quantidade de argumentos recebidas
 	// Não estamos recebendo nenhum argumento
 	if len(args) != 0 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 0")
@@ -69,19 +69,19 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 
 	// Set the admin
 	// The metadata will contain the certificate of the administrator
-	adminCert, err := stub.GetCallerMetadata() 
-	if err != nil {
-		fmt.Println("Failed getting metadata")
-		return nil, errors.New("Failed getting metadata.")
-	}
-	if len(adminCert) == 0 {
-		fmt.Printf("Invalid admin certificate. Empty.")
-		return nil, errors.New("Invalid admin certificate. Empty.")
-	}
+	// adminCert, err := stub.GetCallerMetadata() 
+	// if err != nil {
+	// 	fmt.Println("Failed getting metadata")
+	// 	return nil, errors.New("Failed getting metadata.")
+	// }
+	// if len(adminCert) == 0 {
+	// 	fmt.Printf("Invalid admin certificate. Empty.")
+	// 	return nil, errors.New("Invalid admin certificate. Empty.")
+	// }
 
-	fmt.Printf("The administrator is [%x]", adminCert)
+	// fmt.Printf("The administrator is [%x]", adminCert)
 
-	stub.PutState("admin", adminCert)
+	// stub.PutState("admin", adminCert)
 
 	// Verifica se a tabela 'Proposta' existe
 	fmt.Println("Verificando se a tabela 'Proposta' existe...")
@@ -268,39 +268,39 @@ func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, functi
 		// Consultar uma Proposta existente
 		return t.consultarProposta(stub, args)
 	}
-	if function == "consultarTodas"{
-		 return t.consultarTodasAsPropostas(stub,args)
-	}
+	// if function == "consultarTodas"{
+	// 	 return t.consultarTodasAsPropostas(stub,args)
+	// }
 	fmt.Println("query did not find func: " + function) //error
 
 	return nil, errors.New("Received unknown function query: " + function)
 }
 
-func (t *BoletoPropostaChaincode) consultarTodasAsPropostas(stub shim.ChaincodeStubInterface,args []string) ([]byte, error) {
-    fmt.Println("[consultarTodasAsPropostas] Verificando Autorização de Admin...")
+// func (t *BoletoPropostaChaincode) consultarTodasAsPropostas(stub shim.ChaincodeStubInterface,args []string) ([]byte, error) {
+//     fmt.Println("[consultarTodasAsPropostas] Verificando Autorização de Admin...")
     
-	    // Recover the role that is allowed to make assignments
-	admin, err := stub.GetState("admin")
-	if err != nil {
-		fmt.Printf("Error getting role [%v] \n", err)
-		return nil, errors.New("Failed fetching assigner role")
-	}
+// 	    // Recover the role that is allowed to make assignments
+// 	admin, err := stub.GetState("admin")
+// 	if err != nil {
+// 		fmt.Printf("Error getting role [%v] \n", err)
+// 		return nil, errors.New("Failed fetching assigner role")
+// 	}
 
-	callerRole, err := stub.ReadCertAttribute("role")
-	if err != nil {
-		fmt.Printf("Error reading attribute 'role' [%v] \n", err)
-		return nil, fmt.Errorf("Failed fetching caller role. Error was [%v]", err)
-	}
+// 	callerRole, err := stub.ReadCertAttribute("role")
+// 	if err != nil {
+// 		fmt.Printf("Error reading attribute 'role' [%v] \n", err)
+// 		return nil, fmt.Errorf("Failed fetching caller role. Error was [%v]", err)
+// 	}
 
-    caller := string(callerRole[:])
-	regulator := string(admin[:])
+//     caller := string(callerRole[:])
+// 	regulator := string(admin[:])
 
-	if caller != regulator {
-		fmt.Printf("Caller is not admin - caller %v admin %v\n", caller, regulator)
-		return nil, fmt.Errorf("The caller does not have the rights to invoke assign. Expected role [%v], caller role [%v]", regulator, caller)
-	}
+// 	if caller != regulator {
+// 		fmt.Printf("Caller is not admin - caller %v admin %v\n", caller, regulator)
+// 		return nil, fmt.Errorf("The caller does not have the rights to invoke assign. Expected role [%v], caller role [%v]", regulator, caller)
+// 	}
     
-	fmt.Printf("[getTransaction] Regulator authorized! [%v]" , args[0])
+// 	fmt.Printf("[getTransaction] Regulator authorized! [%v]" , args[0])
 
-     return nil,nil
-}
+//      return nil,nil
+// }
