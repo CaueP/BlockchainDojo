@@ -307,7 +307,7 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 
 	fmt.Println("Proposta: [%s], [%s], [%b], [%b], [%b]", resProposta.id, resProposta.cpfPagador, resProposta.pagadorAceitou, resProposta.beneficiarioAceitou, resProposta.boletoPago)
 
-	var jsonString = "{\"id\":\""+ resProposta.id + "\"}"
+	var jsonString = `{"id":"`+ resProposta.id + `"` + `"cpfPagador":"`+ resProposta.cpfPagador + `"` + `"pagadorAceitou":"`+ strconv.FormatBool(resProposta.pagadorAceitou) + `"` + `"beneficiarioAceitou":"`+ strconv.FormatBool(resProposta.beneficiarioAceitou) + `"` + `"boletoPago":"`+ strconv.FormatBool(resProposta.boletoPago) + `"` +`}`
 
 	valAsBytes, err = json.Marshal(jsonString)
 
