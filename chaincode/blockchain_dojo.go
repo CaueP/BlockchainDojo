@@ -39,12 +39,21 @@ type BoletoPropostaChaincode struct {
 
 // Tipo Proposta para retornar a consulta JSON
 type Proposta struct {
-    id string `json:"id_proposta"`
-	cpfPagador string `json:"cpf_pagador"`
-	pagadorAceitou bool `json:"pagador_aceitou"`
-	beneficiarioAceitou bool `json:"beneficiario_aceitou"`
-	boletoPago bool `json:"boleto_pago"`
+    id					string	`json:"id_proposta"`
+	cpfPagador			string 	`json:"cpf_pagador"`
+	pagadorAceitou 		bool 	`json:"pagador_aceitou"`
+	beneficiarioAceitou bool 	`json:"beneficiario_aceitou"`
+	boletoPago 			bool 	`json:"boleto_pago"`
 }
+
+// consts associadas à tabela de Propostas
+const (
+	nomeTabelaProposta		=	"Proposta"
+	colCpfPagador			=	"cpfPagador"
+	colPagadorAceitou		=	"pagadorAceitou"
+	colBeneficiarioAceitou	=	"beneficiarioAceitou"
+	colBoletoPago			=	"boletoPago"
+)
 
 // ============================================================================================================================
 // Main
@@ -71,36 +80,36 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 	}
 
 	// Verifica se a tabela 'Proposta' existe
-	fmt.Println("Verificando se a tabela 'Proposta' existe...")
-	tbProposta, err := stub.GetTable("Proposta")
+	fmt.Println("Verificando se a tabela " + nomeTabelaProposta + " existe...")
+	tbProposta, err := stub.GetTable(nomeTabelaProposta)
 	if err != nil {
-		fmt.Println("Falha ao executar stub.GetTable para a tabela 'Proposta'. [%v]", err)
+		fmt.Println("Falha ao executar stub.GetTable para a tabela " + nomeTabelaProposta + ". [%v]", err)
 	}
 	// Se a tabela 'Proposta' já existir
 	if tbProposta != nil {	
-		err = stub.DeleteTable("Proposta")		// Excluir a tabela
-		fmt.Println("Tabela 'Proposta' excluída.")
+		err = stub.DeleteTable(nomeTabelaProposta)		// Excluir a tabela
+		fmt.Println("Tabela " + nomeTabelaProposta + " excluída.")
 	}
 
 
-	fmt.Println("Criando a tabela 'Proposta'...")
+	fmt.Println("Criando a tabela " + nomeTabelaProposta + "...")
 	// Criar tabela de Propostas	
-	err = stub.CreateTable("Proposta", []*shim.ColumnDefinition{
+	err = stub.CreateTable(nomeTabelaProposta, []*shim.ColumnDefinition{
 		// Identificador da proposta (hash)
 		&shim.ColumnDefinition{Name: "Id", Type: shim.ColumnDefinition_STRING, Key: true},
 		// CPF do Pagador
-		&shim.ColumnDefinition{Name: "cpfPagador", Type: shim.ColumnDefinition_STRING, Key: false},
+		&shim.ColumnDefinition{Name: colCpfPagador, Type: shim.ColumnDefinition_STRING, Key: false},
 		// Status de aceite do Pagador da proposta
-		&shim.ColumnDefinition{Name: "pagadorAceitou", Type: shim.ColumnDefinition_BOOL, Key: false},
+		&shim.ColumnDefinition{Name: colPagadorAceitou, Type: shim.ColumnDefinition_BOOL, Key: false},
 		// Status de aceite do Beneficiario da proposta
-		&shim.ColumnDefinition{Name: "beneficiarioAceitou", Type: shim.ColumnDefinition_BOOL, Key: false},
+		&shim.ColumnDefinition{Name: colBeneficiarioAceitou, Type: shim.ColumnDefinition_BOOL, Key: false},
 		// Status do Pagamento do Boleto
-		&shim.ColumnDefinition{Name: "boletoPago", Type: shim.ColumnDefinition_BOOL, Key: false},
+		&shim.ColumnDefinition{Name: colBoletoPago, Type: shim.ColumnDefinition_BOOL, Key: false},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Falha ao criar a tabela 'Proposta'. [%v]", err)
+		return nil, fmt.Errorf("Falha ao criar a tabela " + nomeTabelaProposta + ". [%v]", err)
 	} 
-	fmt.Println("Tabela 'Proposta' criada com sucesso.")
+	fmt.Println("Tabela " + nomeTabelaProposta + " criada com sucesso.")
 
 	fmt.Println("Init Chaincode... Finalizado!")
 
@@ -180,7 +189,7 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 	fmt.Printf(" | beneficiarioAceitou: " + strconv.FormatBool(beneficiarioAceitou))
 	fmt.Printf(" | boletoPago: " + strconv.FormatBool(boletoPago) + "\n")
 
-	ok, err := stub.InsertRow("Proposta", shim.Row{
+	ok, err := stub.InsertRow(nomeTabelaProposta, shim.Row{
 		Columns: []*shim.Column{
 			&shim.Column{Value: &shim.Column_String_{String_: idProposta}},
 			&shim.Column{Value: &shim.Column_String_{String_: cpfPagador}},
@@ -189,18 +198,34 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 			&shim.Column{Value: &shim.Column_Bool{Bool: boletoPago}} },
 	})
 
+	// false and no error if a row already exists for the given key.
 	if !ok && err == nil {
 		// Atualmente está retornando que a Proposta já existe, mas podemos implementar o update da Proposta
 		//return nil, errors.New("Proposta já existente.")
 		jsonResp := "{\"registrado\":\"" + "False" + "\"}"
 		return []byte(jsonResp), errors.New("Proposta já existente.")
+
+		/* Trecho para substituir um record
+		//replace the old record row associated with the account ID with the new record row
+		ok, err := stub.ReplaceRow(tableColumn, shim.Row{
+			Columns: []*shim.Column{
+				&shim.Column{Value: &shim.Column_String_{String_: accountID}},
+				&shim.Column{Value: &shim.Column_String_{String_: contactInfo}},
+				&shim.Column{Value: &shim.Column_Uint64{Uint64: amount}}},
+		})
+
+		if !ok && err == nil {
+			myLogger.Errorf("system error %v", err)
+			return errors.New("failed to replace row with account Id." + accountID)
+		}
+		*/
 	}
 
 	//myLogger.Debug("Proposta criada!")
 	fmt.Println("Proposta criada!")
 
 	jsonResp := "{\"registrado\":\"" + "True" + "\"}"
-	return []byte(jsonResp), nil
+	return []byte(jsonResp), err
 
 	//return nil, err
 }
@@ -233,7 +258,7 @@ func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, functi
 func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//myLogger.Debug("consultarProposta...")
 	fmt.Println("consultarProposta...")
-
+	var tamLista int
 	var valAsBytes []byte
 
 	// Verifica se a quantidade de argumentos recebidas corresponde a esperada
@@ -252,7 +277,7 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	columns = append(columns, col1)
 
 	// Consulta a proposta na tabela 'Proposta'
-	row, err := stub.GetRow("Proposta", columns)
+	row, err := stub.GetRow(nomeTabelaProposta, columns)
 	if err != nil {
 		fmt.Println("Erro ao obter Proposta [%s]: [%s]", string(idProposta), err)
 		return nil, fmt.Errorf("Erro ao obter Proposta [%s]: [%s]", string(idProposta), err)
@@ -261,6 +286,7 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	fmt.Println("Query finalizada [% x]", row.Columns[1].GetBytes())
 
 	// objeto Proposta
+	
 	var listaPropostas []Proposta
 	var resProposta Proposta
 	resProposta.id = row.Columns[0].GetString_()
@@ -280,6 +306,10 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	if err != nil {
 			return nil, fmt.Errorf("Query operation failed. Error marshaling JSON: %s", err)
 	}
+
+	tamLista = len(listaPropostas)
+
+	valAsBytes, err = json.Marshal(tamLista)
 
 	return valAsBytes, nil
 }
