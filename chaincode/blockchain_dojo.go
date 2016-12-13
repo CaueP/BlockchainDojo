@@ -18,8 +18,10 @@ limitations under the License.
 Implementação iniciada por Caue Garcia Polimanti e Vitor Diego dos Santos de Sousa
 */
 
+// nome do package
 package main
 
+// lista de imports
 import (
 	"encoding/json"
 	"errors"
@@ -29,7 +31,6 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	
 )
-//	"encoding/base64"
 // "github.com/op/go-logging"
 //var myLogger = logging.MustGetLogger("dojo_mgm")
 
@@ -37,7 +38,7 @@ import (
 type BoletoPropostaChaincode struct {
 }
 
-// Tipo Proposta para retornar a consulta JSON
+// Definição da Struct Proposta
 type Proposta struct {
     ID					string	`json:"id_proposta"`
 	CpfPagador			string 	`json:"cpf_pagador"`
@@ -67,14 +68,13 @@ func main() {
 
 // ============================================================================================================================
 // Init
-// 		Inicia a tabela de proposta
+// 		Inicia/Reinicia a tabela de propostas
 // ============================================================================================================================
 func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	//myLogger.Debug("Init Chaincode...")
 	fmt.Println("Init Chaincode...")
 
-	// Verificação da quantidad de argumentos recebidas
-	// Não estamos recebendo nenhum argumento
+	// Verificação da quantidade de argumentos recebidos
 	if len(args) != 0 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 0")
 	}
@@ -85,15 +85,15 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 	if err != nil {
 		fmt.Println("Falha ao executar stub.GetTable para a tabela " + nomeTabelaProposta + ". [%v]", err)
 	}
-	// Se a tabela 'Proposta' já existir
+	// Se a tabela 'Proposta' já existir, excluir a tabela
 	if tbProposta != nil {	
-		err = stub.DeleteTable(nomeTabelaProposta)		// Excluir a tabela
+		err = stub.DeleteTable(nomeTabelaProposta)
 		fmt.Println("Tabela " + nomeTabelaProposta + " excluída.")
 	}
 
 
+	// Criar tabela de Propostas
 	fmt.Println("Criando a tabela " + nomeTabelaProposta + "...")
-	// Criar tabela de Propostas	
 	err = stub.CreateTable(nomeTabelaProposta, []*shim.ColumnDefinition{
 		// Identificador da proposta (hash)
 		&shim.ColumnDefinition{Name: "Id", Type: shim.ColumnDefinition_STRING, Key: true},
@@ -118,16 +118,16 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 
 
 // ============================================================================================================================
-// Invoke
+// Invoke Functions
 // ============================================================================================================================
 
-// Invoke will be called for every transaction.
-// Supported functions are the following:
-// "init": initialize the chaincode state, used as reset
+// Invoke - Ponto de entrada para chamadas do tipo Invoke.
+// Funções suportadas:
+// "init": inicializa o estado do chaincode, também utilizado como reset
 // "registrarProposta(Id, cpfPagador, pagadorAceitou, 
-// beneficiarioAceitou, boletoPago)": para registrar uma nova proposta.
+// beneficiarioAceitou, boletoPago)": para registrar uma nova proposta ou atualizar uma já existente.
 // Only an administrator can call this function.
-// "consultarProposta(Id)": para consultar uma Proposta. 
+// "consultarProposta(Id)": para consultar uma Proposta existente. 
 // Only the owner of the specific asset can call this function.
 // An asset is any string to identify it. An owner is representated by one of his ECert/TCert.
 func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
@@ -136,25 +136,24 @@ func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, funct
 
 	fmt.Println("invoke is running " + function)
 
-	// Handle different functions
-	if function == "init" { //initialize the chaincode state, used as reset
+	// Estrutura de Seleção para escolher qual função será chamada, 
+	// de acordo com a funcao chamada
+	if function == "init" {
 		return t.Init(stub, "init", args)
 	} else if function == "registrarProposta" {
-		// Registrar nova Proposta
 		return t.registrarProposta(stub, args)
 	}
-	fmt.Println("invoke did not find func: " + function) //error
+	fmt.Println("invoke não encontrou a func: " + function) //error
 
-	return nil, errors.New("Received unknown function invocation: " + function)
+	return nil, errors.New("Invocação de função desconhecida: " + function)
 }
 
-// registrarProposta: função Invoke para registrar uma nova proposta, recebendo os seguintes argumentos
+// registrarProposta: função Invoke para registrar uma nova proposta, recebendo os seguintes argumentos:
 // args[0]: Id. Hash que identificará a proposta
 // args[1]: cpfPagador. CPF do Pagador
 // args[2]: pagadorAceitou. Status de aceite do Pagador da proposta
 // args[3]: beneficiarioAceitou. Status de aceite do Beneficiario da proposta
 // args[4]: boletoPago. Status do Pagamento do Boleto
-//
 func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//myLogger.Debug("registrarProposta...")
 	fmt.Println("registrarProposta...")
@@ -166,7 +165,8 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 		return nil, errors.New("Incorrect number of arguments. Expecting 5")
 	}
 
-	// Obtem os valores dos argumentos e os prepara para salvar na tabela 'Proposta'
+	// Obtem os valores da array de arguments (args) e 
+	// os converte no tipo necessário para salvar na tabela 'Proposta'
 	idProposta := args[0]
 	cpfPagador := args[1]
 	pagadorAceitou, err := strconv.ParseBool(args[2])
@@ -185,7 +185,6 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 	// [To do] verificar identidade
 
 	// Registra a proposta na tabela 'Proposta'
-	//myLogger.Debugf("Criando Proposta Id [%s] para CPF nº [%s]", idProposta, cpfPagador)
 	fmt.Println("Criando Proposta Id [" + idProposta + "] para CPF nº ["+ cpfPagador +"]")
 	fmt.Printf("pagadorAceitou: " + strconv.FormatBool(pagadorAceitou)) 
 	fmt.Printf(" | beneficiarioAceitou: " + strconv.FormatBool(beneficiarioAceitou))
@@ -200,7 +199,7 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 			&shim.Column{Value: &shim.Column_Bool{Bool: boletoPago}} },
 	})
 
-	// false and no error if a row already exists for the given key.
+	// Caso a proposta já exista (false and no error if a row already exists for the given key).
 	if !ok && err == nil {
 		// Apenas retornar que a proposta existe
 		//return nil, errors.New("Proposta já existente.")
@@ -209,7 +208,7 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 
 		// /* 
 		// Trecho para atualizar uma proposta existente
-		//	substitui um registro existente em uma linha com o registro associado ao idProposta recebido
+		//	substitui um registro existente em uma linha com o registro associado ao idProposta recebido nos argumentos
 		ok, err := stub.ReplaceRow(nomeTabelaProposta, shim.Row{
 			Columns: []*shim.Column{
 				&shim.Column{Value: &shim.Column_String_{String_: idProposta}},
@@ -219,19 +218,22 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 			&shim.Column{Value: &shim.Column_Bool{Bool: boletoPago}} },
 		})
 
-		jsonResp = "{\"atualizado\":\"" + "True" + "\"}"
+		
 
 		if !ok && err == nil {
 			//myLogger.Errorf("system error %v", err)
-			return []byte(jsonResp), errors.New("Falha ao atualizar a Proposta nº " + idProposta)
+			jsonResp = "{\"atualizado\":\"" + "false" + "\"}"
+			return nil, errors.New("Falha ao atualizar a Proposta nº " + idProposta)
 		}
+		jsonResp = "{\"atualizado\":\"" + "true" + "\"}"
+		return []byte(jsonResp), nil
 		//*/
 	}
 
 	//myLogger.Debug("Proposta criada!")
 	fmt.Println("Proposta criada!")
 
-	jsonResp = "{\"registrado\":\"" + "True" + "\"}"
+	jsonResp = "{\"registrado\":\"" + "true" + "\"}"
 	return []byte(jsonResp), err
 }
 
@@ -241,32 +243,35 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 // ============================================================================================================================
 
 // Query is our entry point for queries
+
+// Query - Ponto de entrada para chamadas do tipo Query.
+// Funções suportadas:
+// "consultarProposta(Id)": para consultar uma proposta existente
 func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	//myLogger.Debug("Query Chaincode...")
 	fmt.Println("Query Chaincode...")
 
 	fmt.Println("query is running " + function)
 
-	// Handle different functions
+	// Estrutura de Seleção para escolher qual função será chamada, 
+	// de acordo com a funcao chamada
 	if function == "consultarProposta" { //read a variable
 		// Consultar uma Proposta existente
 		return t.consultarProposta(stub, args)
 	}
-	fmt.Println("query did not find func: " + function) //error
+	fmt.Println("query encontrou a func: " + function) //error
 
-	return nil, errors.New("Received unknown function query: " + function)
+	return nil, errors.New("Query de função desconhecida: " + function)
 }
-
 
 // consultarProposta: função Query para consultar uma proposta existente, recebendo os seguintes argumentos
 // args[0]: Id. Hash da proposta
-//
 func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//myLogger.Debug("consultarProposta...")
 	fmt.Println("consultarProposta...")
-	var listaPropostas []Proposta	// lista de Propostas
+	//var listaPropostas []Proposta	// lista de Propostas
 	var resProposta Proposta		// Proposta
-	var valAsBytes []byte			// retorno do json em bytes
+	var propostaAsBytes []byte			// retorno do json em bytes
 	
 	// Verifica se a quantidade de argumentos recebidas corresponde a esperada
 	if len(args) != 1 {
@@ -278,19 +283,19 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 
 	// [To do] verificar identidade
 
-	// Define o valor de coluna a ser buscado
+	// Define o valor de coluna do registro a ser buscado
 	var columns []shim.Column
 	col1 := shim.Column{Value: &shim.Column_String_{String_: idProposta}}
 	columns = append(columns, col1)
 
-	// Consulta a proposta na tabela 'Proposta'
+	// Consultar a proposta na tabela 'Proposta'
 	row, err := stub.GetRow(nomeTabelaProposta, columns)
 	if err != nil {
 		fmt.Println("Erro ao obter Proposta [%s]: [%s]", string(idProposta), err)
 		return nil, fmt.Errorf("Erro ao obter Proposta [%s]: [%s]", string(idProposta), err)
 	}
 
-	// se nao encontrar nenhuma proposta correspondente
+	// Tratamento para o caso de não encontrar nenhuma proposta correspondente
 	if len(row.Columns) == 0 || row.Columns[2] == nil { 
 		return nil, fmt.Errorf("Proposta [%s] não existente.", string(idProposta))	// retorno do erro para o json
 	}
@@ -305,15 +310,15 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	resProposta.BoletoPago = row.Columns[4].GetBool()
 
 	// Inserir resultado na lista de propostas
-	listaPropostas = append(listaPropostas, resProposta)
+	//listaPropostas = append(listaPropostas, resProposta)
 
 	fmt.Println("Proposta: [%s], [%s], [%b], [%b], [%b]", resProposta.ID, resProposta.CpfPagador, resProposta.PagadorAceitou, resProposta.BeneficiarioAceitou, resProposta.BoletoPago)
 
-	// Converter o objeto da Proposta para Bytes, para retorná-lo
-	valAsBytes, err = json.Marshal(resProposta)
+	// Converter o objeto da Proposta para Bytes, para retorná-lo em formato JSON
+	propostaAsBytes, err = json.Marshal(resProposta)
 	if err != nil {
 			return nil, fmt.Errorf("Query operation failed. Error marshaling JSON: %s", err)
 	}
-
-	return valAsBytes, nil
+	// retorna o objeto em bytes
+	return propostaAsBytes, nil
 }
