@@ -24,26 +24,28 @@ func main() {
 }
 
 func(t *adminStructState) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	var Aval int
-	var err error
-
-	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
-	}
-
-	// Initialize the chaincode
-	Aval, err = strconv.Atoi(args[0])
+	fmt.Println("[init] Init Chaincode")
+	if len(args) != 0 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 0")
+	}	
+     // Set the admin
+	// The metadata will contain the certificate of the administrator
+	fmt.Println("Getting caller metadata")
+	adminCert, err := stub.GetCallerMetadata() 
 	if err != nil {
-		return nil, errors.New("Expecting integer value for init")
+		fmt.Println("Failed getting metadata")
+		return nil, errors.New("Failed getting metadata.")
+	}
+	if len(adminCert) == 0 {
+		fmt.Printf("Invalid admin certificate. Empty.")
+		return nil, errors.New("Invalid admin certificate. Empty.")
 	}
 
-	// Write the state to the ledger
-	err = stub.PutState("abc", []byte(strconv.Itoa(Aval))) //making a test var "abc", I find it handy to read/write to it right away to test the network
-	if err != nil {
-		return nil, err
-	}
+	fmt.Printf("The administrator is [%x]", adminCert)
 
-	return nil, nil
+	stub.PutState("admin", adminCert)
+
+	return nil, err
 }
 
 func (t *adminStructState) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
@@ -56,6 +58,22 @@ func (t *adminStructState) Invoke(stub shim.ChaincodeStubInterface, function str
 
 func (t *adminStructState) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("query is running " + function)
+	if function == "read" {
+		return t.read(stub,args)
+	}
+    return nil,nil
+}
+
+func (t *adminStructState) read(stub shim.ChaincodeStubInterface, args []string)([]byte, error){
+    // Recover the role that is allowed to make assignments
+	admin, err := stub.GetState("admin")
+	if err != nil {
+		fmt.Printf("Error getting role [%v] \n", err)
+		return nil, errors.New("Failed fetching assigner role")
+	}
+	regulator := string(admin[:])
+	fmt.Printf("[getTransaction] Regulator authorized! [%v]" , regulator)
+
     return nil,nil
 }
 
