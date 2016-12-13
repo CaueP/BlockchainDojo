@@ -1,7 +1,7 @@
 /**************************************************************
  *Exemplo de uso das permissões dentro do chaincode
  *Neste caso somente o admin pode visualizar o valor proposto
- *************************************************************/
+ **************************************************************
 
  /*
 Copyright IBM Corp. 2016 All Rights Reserved.
@@ -28,10 +28,7 @@ import (
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/core/crypto/primitives"
-	"github.com/op/go-logging"
 )
-
-var myLogger = logging.MustGetLogger("asset_mgm")
 
 // AssetManagementChaincode is simple chaincode implementing a basic Asset Management system
 // with access control enforcement at chaincode level.
@@ -43,9 +40,8 @@ type AssetManagementChaincode struct {
 
 // Init method will be called during deployment.
 // The deploy transaction metadata is supposed to contain the administrator cert
-func (t *AssetManagementChaincode) Init(stub shim.ChaincodeStubInterface) ([]byte, error) {
-	_, args := stub.GetFunctionAndParameters()
-	myLogger.Debug("Init Chaincode...")
+func (t *AssetManagementChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	fmt.Printf("Init Chaincode...")
 	if len(args) != 0 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 0")
 	}
@@ -61,27 +57,27 @@ func (t *AssetManagementChaincode) Init(stub shim.ChaincodeStubInterface) ([]byt
 
 	// Set the admin
 	// The metadata will contain the certificate of the administrator
-	adminCert, err := stub.GetCallerMetadata() 
+	adminCert, err := stub.GetCallerMetadata()
 	if err != nil {
-		myLogger.Debug("Failed getting metadata")
+		fmt.Printf("Failed getting metadata")
 		return nil, errors.New("Failed getting metadata.")
 	}
 	if len(adminCert) == 0 {
-		myLogger.Debug("Invalid admin certificate. Empty.")
+		fmt.Printf("Invalid admin certificate. Empty.")
 		return nil, errors.New("Invalid admin certificate. Empty.")
 	}
 
-	myLogger.Debug("The administrator is [%x]", adminCert)
+	fmt.Printf("The administrator is [%x]", adminCert)
 
 	stub.PutState("admin", adminCert)
 
-	myLogger.Debug("Init Chaincode...done")
+	fmt.Printf("Init Chaincode...done")
 
 	return nil, nil
 }
 
 func (t *AssetManagementChaincode) assign(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	myLogger.Debug("Assign...")
+	fmt.Printf("Assign...")
 
 	if len(args) != 2 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 2")
@@ -109,7 +105,7 @@ func (t *AssetManagementChaincode) assign(stub shim.ChaincodeStubInterface, args
 	}
 
 	// Register assignment
-	myLogger.Debugf("New owner of [%s] is [% x]", asset, owner)
+	fmt.Printf("New owner of [%s] is [% x]", asset, owner)
 
 	ok, err = stub.InsertRow("AssetsOwnership", shim.Row{
 		Columns: []*shim.Column{
@@ -121,13 +117,13 @@ func (t *AssetManagementChaincode) assign(stub shim.ChaincodeStubInterface, args
 		return nil, errors.New("Asset was already assigned.")
 	}
 
-	myLogger.Debug("Assign...done!")
+	fmt.Printf("Assign...done!")
 
 	return nil, err
 }
 
 func (t *AssetManagementChaincode) transfer(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	myLogger.Debug("Transfer...")
+	fmt.Printf("Transfer...")
 
 	if len(args) != 2 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 2")
@@ -151,7 +147,7 @@ func (t *AssetManagementChaincode) transfer(stub shim.ChaincodeStubInterface, ar
 	}
 
 	prvOwner := row.Columns[1].GetBytes()
-	myLogger.Debugf("Previous owener of [%s] is [% x]", asset, prvOwner)
+	fmt.Printf("Previous owener of [%s] is [% x]", asset, prvOwner)
 	if len(prvOwner) == 0 {
 		return nil, fmt.Errorf("Invalid previous owner. Nil")
 	}
@@ -186,15 +182,15 @@ func (t *AssetManagementChaincode) transfer(stub shim.ChaincodeStubInterface, ar
 		return nil, errors.New("Failed inserting row.")
 	}
 
-	myLogger.Debug("New owner of [%s] is [% x]", asset, newOwner)
+	fmt.Printf("New owner of [%s] is [% x]", asset, newOwner)
 
-	myLogger.Debug("Transfer...done")
+	fmt.Printf("Transfer...done")
 
 	return nil, nil
 }
 
 func (t *AssetManagementChaincode) isCaller(stub shim.ChaincodeStubInterface, certificate []byte) (bool, error) {
-	myLogger.Debug("Check caller...")
+	fmt.Printf("Check caller...")
 
 	// In order to enforce access control, we require that the
 	// metadata contains the signature under the signing key corresponding
@@ -218,10 +214,10 @@ func (t *AssetManagementChaincode) isCaller(stub shim.ChaincodeStubInterface, ce
 		return false, errors.New("Failed getting binding")
 	}
 
-	myLogger.Debugf("passed certificate [% x]", certificate)
-	myLogger.Debugf("passed sigma [% x]", sigma)
-	myLogger.Debugf("passed payload [% x]", payload)
-	myLogger.Debugf("passed binding [% x]", binding)
+	fmt.Printf("passed certificate [% x]", certificate)
+	fmt.Printf("passed sigma [% x]", sigma)
+	fmt.Printf("passed payload [% x]", payload)
+	fmt.Printf("passed binding [% x]", binding)
 
 	ok, err := stub.VerifySignature(
 		certificate,
@@ -229,14 +225,14 @@ func (t *AssetManagementChaincode) isCaller(stub shim.ChaincodeStubInterface, ce
 		append(payload, binding...),
 	)
 	if err != nil {
-		myLogger.Errorf("Failed checking signature [%s]", err)
+		fmt.Errorf("Failed checking signature [%s]", err)
 		return ok, err
 	}
 	if !ok {
-		myLogger.Error("Invalid signature")
+		fmt.Errorf("Invalid signature")
 	}
 
-	myLogger.Debug("Check caller...Verified!")
+	fmt.Printf("Check caller...Verified!")
 
 	return ok, err
 }
@@ -248,10 +244,10 @@ func (t *AssetManagementChaincode) isCaller(stub shim.ChaincodeStubInterface, ce
 // "transfer(asset, newOwner)": to transfer the ownership of an asset. Only the owner of the specific
 // asset can call this function.
 // An asset is any string to identify it. An owner is representated by one of his ECert/TCert.
-func (t *AssetManagementChaincode) Invoke(stub shim.ChaincodeStubInterface) ([]byte, error) {
-	function, args := stub.GetFunctionAndParameters()
-	if function == "init" {
-		return t.Init(stub)
+func (t *AssetManagementChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+
+    if function == "init" {
+       return t.Init(stub,"init",args)
 	}
 	// Handle different functions
 	if function == "assign" {
@@ -260,29 +256,33 @@ func (t *AssetManagementChaincode) Invoke(stub shim.ChaincodeStubInterface) ([]b
 	} else if function == "transfer" {
 		// Transfer ownership
 		return t.transfer(stub, args)
-	} else if function == "query" {
-		// Query owner
-		return t.query(stub, args)
 	}
 
 	return nil, errors.New("Received unknown function invocation")
 }
 
+// Query callback representing the query of a chaincode
 // Supported functions are the following:
 // "query(asset)": returns the owner of the asset.
 // Anyone can invoke this function.
-func (t *AssetManagementChaincode) query(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *AssetManagementChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	fmt.Printf("Query [%s]", function)
+
+	if function != "query" {
+		return nil, errors.New("Invalid query function name. Expecting 'query' but found '" + function + "'")
+	}
+
 	var err error
 
 	if len(args) != 1 {
-		myLogger.Debug("Incorrect number of arguments. Expecting name of an asset to query")
+		fmt.Printf("Incorrect number of arguments. Expecting name of an asset to query")
 		return nil, errors.New("Incorrect number of arguments. Expecting name of an asset to query")
 	}
 
 	// Who is the owner of the asset?
 	asset := args[0]
 
-	myLogger.Debugf("Query [%s]", string(asset))
+	fmt.Printf("Arg [%s]", string(asset))
 
 	var columns []shim.Column
 	col1 := shim.Column{Value: &shim.Column_String_{String_: asset}}
@@ -290,11 +290,11 @@ func (t *AssetManagementChaincode) query(stub shim.ChaincodeStubInterface, args 
 
 	row, err := stub.GetRow("AssetsOwnership", columns)
 	if err != nil {
-		myLogger.Debugf("Failed retriving asset [%s]: [%s]", string(asset), err)
+		fmt.Printf("Failed retriving asset [%s]: [%s]", string(asset), err)
 		return nil, fmt.Errorf("Failed retriving asset [%s]: [%s]", string(asset), err)
 	}
 
-	myLogger.Debugf("Query done [% x]", row.Columns[1].GetBytes())
+	fmt.Printf("Query done [% x]", row.Columns[1].GetBytes())
 
 	return row.Columns[1].GetBytes(), nil
 }
