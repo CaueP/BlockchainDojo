@@ -286,7 +286,7 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 
 	// se nao encontrar nenhuma proposta correspondente
 	if len(row.Columns) == 0 || row.Columns[2] == nil { 
-		return nil, fmt.Errorf("Proposta [%s] não existente.", string(idProposta))
+		return nil, fmt.Errorf("Proposta [%s] não existente.", string(idProposta))	// retorno do erro para o json
 	}
 
 	fmt.Println("Query finalizada [% x]", row.Columns[1].GetBytes())
@@ -307,7 +307,11 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 
 	fmt.Println("Proposta: [%s], [%s], [%b], [%b], [%b]", resProposta.id, resProposta.cpfPagador, resProposta.pagadorAceitou, resProposta.beneficiarioAceitou, resProposta.boletoPago)
 
-	valAsBytes, err = json.Marshal(resProposta)
+	var jsonString = "{\"id\":\""+ resProposta.id + "\"}"
+
+	valAsBytes, err = json.Marshal(jsonString)
+
+	//valAsBytes, err = json.Marshal(resProposta)
 	if err != nil {
 			return nil, fmt.Errorf("Query operation failed. Error marshaling JSON: %s", err)
 	}
