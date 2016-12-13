@@ -156,13 +156,18 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 
 	if !ok && err == nil {
 		// Atualmente está retornando que a Proposta já existe, mas podemos implementar o update da Proposta
-		return nil, errors.New("Proposta já existente.")
+		//return nil, errors.New("Proposta já existente.")
+		jsonResp := "{\"registrado\":\"" + "False" + "\"}"
+		return []byte(jsonResp), errors.New("Proposta já existente.")
 	}
 
 	//myLogger.Debug("Proposta criada!")
 	fmt.Println("Proposta criada!")
 
-	return nil, err
+	jsonResp := "{\"registrado\":\"" + "True" + "\"}"
+	return []byte(jsonResp), nil
+
+	//return nil, err
 }
 
 // consultarProposta: função Query para consultar uma proposta existente, recebendo os seguintes argumentos
