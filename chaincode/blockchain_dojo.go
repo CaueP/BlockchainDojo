@@ -39,7 +39,7 @@ type BoletoPropostaChaincode struct {
 
 // Tipo Proposta para retornar a consulta JSON
 type Proposta struct {
-    id int `json:"id_proposta"`
+    id string `json:"id_proposta"`
 	cpfPagador string `json:"cpf_pagador"`
 	pagadorAceitou bool `json:"pagador_aceitou"`
 	beneficiarioAceitou bool `json:"beneficiario_aceitou"`
@@ -200,13 +200,15 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 
 	// objeto Proposta
 	var resProposta Proposta
-	json.Unmarshal(row.Columns[0].GetBytes(), resProposta.id)
-	json.Unmarshal(row.Columns[1].GetBytes(), resProposta.cpfPagador)
-	json.Unmarshal(row.Columns[2].GetBytes(), resProposta.pagadorAceitou)
-	json.Unmarshal(row.Columns[3].GetBytes(), resProposta.beneficiarioAceitou)
-	json.Unmarshal(row.Columns[4].GetBytes(), resProposta.boletoPago)
+	resProposta.id = row.Columns[0].GetString_()
+	resProposta.cpfPagador = row.Columns[1].GetString_()
+	resProposta.pagadorAceitou = row.Columns[2].GetBool()
+	resProposta.beneficiarioAceitou = row.Columns[3].GetBool()
+	resProposta.boletoPago = row.Columns[4].GetBool()
 
-	fmt.Println("Proposta: [%s], [%b], [%b], [%b]", resProposta.cpfPagador, resProposta.pagadorAceitou, resProposta.beneficiarioAceitou, resProposta.boletoPago)
+	fmt.Println("Valores da tabela: [%s], [%s], [%b], [%b], [%b]", row.Columns[0].GetString_(), row.Columns[1].GetString_(), row.Columns[2].GetBool(), row.Columns[3].GetBool(), row.Columns[3].GetBool())
+
+	fmt.Println("Proposta: [%s], [%s], [%b], [%b], [%b]", resProposta.id, resProposta.cpfPagador, resProposta.pagadorAceitou, resProposta.beneficiarioAceitou, resProposta.boletoPago)
 
 	valAsBytes, err = json.Marshal(resProposta)
 	return valAsBytes, nil
