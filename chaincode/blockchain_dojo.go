@@ -199,6 +199,7 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	fmt.Println("Query finalizada [% x]", row.Columns[1].GetBytes())
 
 	// objeto Proposta
+	var listaPropostas []Proposta
 	var resProposta Proposta
 	resProposta.id = row.Columns[0].GetString_()
 	resProposta.cpfPagador = row.Columns[1].GetString_()
@@ -206,11 +207,18 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	resProposta.beneficiarioAceitou = row.Columns[3].GetBool()
 	resProposta.boletoPago = row.Columns[4].GetBool()
 
-	fmt.Println("Valores da tabela: [%s], [%s], [%b], [%b], [%b]", row.Columns[0].GetString_(), row.Columns[1].GetString_(), row.Columns[2].GetBool(), row.Columns[3].GetBool(), row.Columns[3].GetBool())
+	// Inserir resultado na lista de propostas
+	listaPropostas = append(listaPropostas, resProposta)
+
+	fmt.Println("Valores da tabela: [%s], [%s], [%b], [%b], [%b]", row.Columns[0].GetString_(), row.Columns[1].GetString_(), row.Columns[2].GetBool(), row.Columns[3].GetBool(), row.Columns[4].GetBool())
 
 	fmt.Println("Proposta: [%s], [%s], [%b], [%b], [%b]", resProposta.id, resProposta.cpfPagador, resProposta.pagadorAceitou, resProposta.beneficiarioAceitou, resProposta.boletoPago)
 
-	valAsBytes, err = json.Marshal(resProposta)
+	valAsBytes, err = json.Marshal(listaPropostas)
+	if err != nil {
+			return nil, fmt.Errorf("Query operation failed. Error marshaling JSON: %s", err)
+	}
+
 	return valAsBytes, nil
 }
 
