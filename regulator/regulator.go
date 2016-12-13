@@ -60,7 +60,7 @@ func(t *adminStructState) Init(stub shim.ChaincodeStubInterface, function string
      // Set the admin
 	// The metadata will contain the certificate of the administrator
 	fmt.Println("Getting caller metadata")
-	adminCert, err := stub.GetCallerMetadata() 
+	adminCert, err := admin.GetCallerMetadata() //stub.GetCallerMetadata() 
 	if err != nil {
 		fmt.Println("Failed getting metadata")
 		return nil, errors.New("Failed getting metadata.")
