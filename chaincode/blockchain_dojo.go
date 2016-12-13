@@ -283,6 +283,11 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 		return nil, fmt.Errorf("Erro ao obter Proposta [%s]: [%s]", string(idProposta), err)
 	}
 
+	// se nao encontrar nenhuma proposta correspondente
+	if len(row.Columns) == 0 || row.Columns[2] == nil { 
+		return nil, fmt.Errorf("Proposta [%s] não existente.", string(idProposta))
+	}
+
 	fmt.Println("Query finalizada [% x]", row.Columns[1].GetBytes())
 
 	// objeto Proposta
