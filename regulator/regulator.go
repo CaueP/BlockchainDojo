@@ -1,5 +1,10 @@
-/*
-Copyright IBM Corp 2016 All Rights Reserved.
+/**************************************************************
+ *Exemplo de uso das permissões dentro do chaincode
+ *Neste caso somente o admin pode visualizar o valor proposto
+ **************************************************************
+
+ /*
+Copyright IBM Corp. 2016 All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,76 +22,44 @@ limitations under the License.
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
+
 	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/core/crypto/primitives"
 )
 
-/*******************************************
- * Alguns structs a nível de demo,o ideal seria que somente as informacoes de transacao tivessem 
- * structs mesmo
- *******************************************/
-
-type Beneficiario struct {
-	id int `json:"id_beneficiario"`
-	nome string `json:"nome_beneficiario"`
-	assinatura string `json:"assign_digital"`
+// AssetManagementChaincode is simple chaincode implementing a basic Asset Management system
+// with access control enforcement at chaincode level.
+// Look here for more information on how to implement access control at chaincode level:
+// https://github.com/hyperledger/fabric/blob/master/docs/tech/application-ACL.md
+// An asset is simply represented by a string.
+type AssetManagementChaincode struct {
 }
 
-type Pagador struct {
-	id int `json:"id_pagador"`
-	cpf float32 `json:"cpf_pagador"`
-	nome string `json:"nome_pagador"`
-}
-
-type Proposta struct {
-    id int `json:"id_proposta"`
-	tipo string `json:"tipo"`
-	valor float64 `json:"valor"`
-	dtCriacao string `json:"dt_criacao"`
-}
-
-type Transacao struct{
-	id int `json:"id_transacao"`
-	proposta Proposta `json:"proposta"`
-	beneficiario Beneficiario `json:"beneficiario"`
-	pagador Pagador `json:"pagador"`
-}
-
-// SimpleChaincode example simple Chaincode implementation
-type SimpleChaincode struct {
-}
-
-// ============================================================================================================================
-// Main
-// ============================================================================================================================
-func main() {
-	err := shim.Start(new(SimpleChaincode))
-	if err != nil {
-		fmt.Printf("Error starting Simple chaincode: %s", err)
-	}
-}
-
-// Init resets all the things
-func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface,function string,args []string) ([]byte, error) {
-	fmt.Println("Init Chaincode...")
+// Init method will be called during deployment.
+// The deploy transaction metadata is supposed to contain the administrator cert
+func (t *AssetManagementChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	fmt.Printf("Init Chaincode...")
 	if len(args) != 0 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 0")
 	}
 
 	// Create ownership table
-	err := stub.CreateTable("Transacoes", []*shim.ColumnDefinition{
-		&shim.ColumnDefinition{Name: "Transacao", Type: shim.ColumnDefinition_STRING, Key: true},
+	err := stub.CreateTable("AssetsOwnership", []*shim.ColumnDefinition{
+		&shim.ColumnDefinition{Name: "Asset", Type: shim.ColumnDefinition_STRING, Key: true},
+		&shim.ColumnDefinition{Name: "Owner", Type: shim.ColumnDefinition_BYTES, Key: false},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Failed creating Transacoes table, [%v]", err)
+		return nil, errors.New("Failed creating AssetsOnwership table.")
 	}
 
-     // Set the admin
+	// Set the admin
 	// The metadata will contain the certificate of the administrator
-	adminCert, err := stub.GetCallerMetadata() 
+	adminCert, err := stub.GetCallerMetadata()
 	if err != nil {
-		fmt.Println("Failed getting metadata")
+		fmt.Printf("Failed getting metadata")
 		return nil, errors.New("Failed getting metadata.")
 	}
 	if len(adminCert) == 0 {
@@ -98,66 +71,238 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface,function string,
 
 	stub.PutState("admin", adminCert)
 
-	return nil, err
+	fmt.Printf("Init Chaincode...done")
+
+	return nil, nil
 }
 
-// Invoke is our entry point to invoke a chaincode function
-func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	fmt.Println("invoke is running " + function)
-
-	// Handle different functions
-	if function == "init" { //initialize the chaincode state, used as reset
-		return t.Init(stub,"init", args)
-	}
-	fmt.Println("invoke did not find func: " + function) //error
-
-	return nil, errors.New("Received unknown function invocation: " + function)
-}
-
-// Query is our entry point for queries
-func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	fmt.Println("query is running " + function)
-
-	if function == "read" { //deletes an entity from its state
-	    return t.getTransaction(stub, args)
-	}
-	fmt.Println("query did not find func: " + function) //error
-
-	return nil, errors.New("Received unknown function query: " + function)
-}
-
-
-
-//read function with high certs
-func (t *SimpleChaincode) getTransaction(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	fmt.Println("Retrieving transaction information...")
+func (t *AssetManagementChaincode) assign(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	fmt.Printf("Assign...")
 
 	if len(args) != 2 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 2")
 	}
 
-    // Recover the role that is allowed to make assignments
-	admin, err := stub.GetState("admin")
+	asset := args[0]
+	owner, err := base64.StdEncoding.DecodeString(args[1])
 	if err != nil {
-		fmt.Printf("Error getting role [%v] \n", err)
-		return nil, errors.New("Failed fetching assigner role")
+		return nil, errors.New("Failed decodinf owner")
 	}
 
-	callerRole, err := stub.ReadCertAttribute("role")
+	// Verify the identity of the caller
+	// Only an administrator can invoker assign
+	adminCertificate, err := stub.GetState("admin")
 	if err != nil {
-		fmt.Printf("Error reading attribute 'role' [%v] \n", err)
-		return nil, fmt.Errorf("Failed fetching caller role. Error was [%v]", err)
+		return nil, errors.New("Failed fetching admin identity")
 	}
 
-    caller := string(callerRole[:])
-	regulator := string(admin[:])
-
-	if caller != regulator {
-		fmt.Printf("Caller is not assigner - caller %v assigner %v\n", caller, regulator)
-		return nil, fmt.Errorf("The caller does not have the rights to invoke assign. Expected role [%v], caller role [%v]", regulator, caller)
+	ok, err := t.isCaller(stub, adminCertificate)
+	if err != nil {
+		return nil, errors.New("Failed checking admin identity")
 	}
-    
-	fmt.Printf("[getTransaction] Regulator authorized! [%v]" , args[1])
+	if !ok {
+		return nil, errors.New("The caller is not an administrator")
+	}
 
-    return nil,nil
+	// Register assignment
+	fmt.Printf("New owner of [%s] is [% x]", asset, owner)
+
+	ok, err = stub.InsertRow("AssetsOwnership", shim.Row{
+		Columns: []*shim.Column{
+			&shim.Column{Value: &shim.Column_String_{String_: asset}},
+			&shim.Column{Value: &shim.Column_Bytes{Bytes: owner}}},
+	})
+
+	if !ok && err == nil {
+		return nil, errors.New("Asset was already assigned.")
+	}
+
+	fmt.Printf("Assign...done!")
+
+	return nil, err
+}
+
+func (t *AssetManagementChaincode) transfer(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	fmt.Printf("Transfer...")
+
+	if len(args) != 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2")
+	}
+
+	asset := args[0]
+	newOwner, err := base64.StdEncoding.DecodeString(args[1])
+	if err != nil {
+		return nil, fmt.Errorf("Failed decoding owner")
+	}
+
+	// Verify the identity of the caller
+	// Only the owner can transfer one of his assets
+	var columns []shim.Column
+	col1 := shim.Column{Value: &shim.Column_String_{String_: asset}}
+	columns = append(columns, col1)
+
+	row, err := stub.GetRow("AssetsOwnership", columns)
+	if err != nil {
+		return nil, fmt.Errorf("Failed retrieving asset [%s]: [%s]", asset, err)
+	}
+
+	prvOwner := row.Columns[1].GetBytes()
+	fmt.Printf("Previous owener of [%s] is [% x]", asset, prvOwner)
+	if len(prvOwner) == 0 {
+		return nil, fmt.Errorf("Invalid previous owner. Nil")
+	}
+
+	// Verify ownership
+	ok, err := t.isCaller(stub, prvOwner)
+	if err != nil {
+		return nil, errors.New("Failed checking asset owner identity")
+	}
+	if !ok {
+		return nil, errors.New("The caller is not the owner of the asset")
+	}
+
+	// At this point, the proof of ownership is valid, then register transfer
+	err = stub.DeleteRow(
+		"AssetsOwnership",
+		[]shim.Column{shim.Column{Value: &shim.Column_String_{String_: asset}}},
+	)
+	if err != nil {
+		return nil, errors.New("Failed deliting row.")
+	}
+
+	_, err = stub.InsertRow(
+		"AssetsOwnership",
+		shim.Row{
+			Columns: []*shim.Column{
+				&shim.Column{Value: &shim.Column_String_{String_: asset}},
+				&shim.Column{Value: &shim.Column_Bytes{Bytes: newOwner}},
+			},
+		})
+	if err != nil {
+		return nil, errors.New("Failed inserting row.")
+	}
+
+	fmt.Printf("New owner of [%s] is [% x]", asset, newOwner)
+
+	fmt.Printf("Transfer...done")
+
+	return nil, nil
+}
+
+func (t *AssetManagementChaincode) isCaller(stub shim.ChaincodeStubInterface, certificate []byte) (bool, error) {
+	fmt.Printf("Check caller...")
+
+	// In order to enforce access control, we require that the
+	// metadata contains the signature under the signing key corresponding
+	// to the verification key inside certificate of
+	// the payload of the transaction (namely, function name and args) and
+	// the transaction binding (to avoid copying attacks)
+
+	// Verify \sigma=Sign(certificate.sk, tx.Payload||tx.Binding) against certificate.vk
+	// \sigma is in the metadata
+
+	sigma, err := stub.GetCallerMetadata()
+	if err != nil {
+		return false, errors.New("Failed getting metadata")
+	}
+	payload, err := stub.GetPayload()
+	if err != nil {
+		return false, errors.New("Failed getting payload")
+	}
+	binding, err := stub.GetBinding()
+	if err != nil {
+		return false, errors.New("Failed getting binding")
+	}
+
+	fmt.Printf("passed certificate [% x]", certificate)
+	fmt.Printf("passed sigma [% x]", sigma)
+	fmt.Printf("passed payload [% x]", payload)
+	fmt.Printf("passed binding [% x]", binding)
+
+	ok, err := stub.VerifySignature(
+		certificate,
+		sigma,
+		append(payload, binding...),
+	)
+	if err != nil {
+		fmt.Errorf("Failed checking signature [%s]", err)
+		return ok, err
+	}
+	if !ok {
+		fmt.Errorf("Invalid signature")
+	}
+
+	fmt.Printf("Check caller...Verified!")
+
+	return ok, err
+}
+
+// Invoke will be called for every transaction.
+// Supported functions are the following:
+// "assign(asset, owner)": to assign ownership of assets. An asset can be owned by a single entity.
+// Only an administrator can call this function.
+// "transfer(asset, newOwner)": to transfer the ownership of an asset. Only the owner of the specific
+// asset can call this function.
+// An asset is any string to identify it. An owner is representated by one of his ECert/TCert.
+func (t *AssetManagementChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+
+    if function == "init" {
+       return t.Init(stub,"init",args)
+	}
+	// Handle different functions
+	if function == "assign" {
+		// Assign ownership
+		return t.assign(stub, args)
+	} else if function == "transfer" {
+		// Transfer ownership
+		return t.transfer(stub, args)
+	}
+
+	return nil, errors.New("Received unknown function invocation")
+}
+
+// Query callback representing the query of a chaincode
+// Supported functions are the following:
+// "query(asset)": returns the owner of the asset.
+// Anyone can invoke this function.
+func (t *AssetManagementChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	fmt.Printf("Query [%s]", function)
+
+	if function != "query" {
+		return nil, errors.New("Invalid query function name. Expecting 'query' but found '" + function + "'")
+	}
+
+	var err error
+
+	if len(args) != 1 {
+		fmt.Printf("Incorrect number of arguments. Expecting name of an asset to query")
+		return nil, errors.New("Incorrect number of arguments. Expecting name of an asset to query")
+	}
+
+	// Who is the owner of the asset?
+	asset := args[0]
+
+	fmt.Printf("Arg [%s]", string(asset))
+
+	var columns []shim.Column
+	col1 := shim.Column{Value: &shim.Column_String_{String_: asset}}
+	columns = append(columns, col1)
+
+	row, err := stub.GetRow("AssetsOwnership", columns)
+	if err != nil {
+		fmt.Printf("Failed retriving asset [%s]: [%s]", string(asset), err)
+		return nil, fmt.Errorf("Failed retriving asset [%s]: [%s]", string(asset), err)
+	}
+
+	fmt.Printf("Query done [% x]", row.Columns[1].GetBytes())
+
+	return row.Columns[1].GetBytes(), nil
+}
+
+func main() {
+	primitives.SetSecurityLevel("SHA3", 256)
+	err := shim.Start(new(AssetManagementChaincode))
+	if err != nil {
+		fmt.Printf("Error starting AssetManagementChaincode: %s", err)
+	}
 }
