@@ -250,6 +250,9 @@ func (t *AssetManagementChaincode) isCaller(stub shim.ChaincodeStubInterface, ce
 // An asset is any string to identify it. An owner is representated by one of his ECert/TCert.
 func (t *AssetManagementChaincode) Invoke(stub shim.ChaincodeStubInterface) ([]byte, error) {
 	function, args := stub.GetFunctionAndParameters()
+	if function == "init" {
+		return t.Init(stub)
+	}
 	// Handle different functions
 	if function == "assign" {
 		// Assign ownership
