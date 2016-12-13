@@ -1,5 +1,10 @@
-/*
-Copyright IBM Corp 2016 All Rights Reserved.
+/**************************************************************
+ *Exemplo de uso das permissões dentro do chaincode
+ *Neste caso somente o admin pode visualizar o valor proposto
+ *************************************************************/
+
+ /*
+Copyright IBM Corp. 2016 All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,293 +19,287 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/*
-Implementação iniciada por Caue Garcia Polimanti e Vitor Diego dos Santos de Sousa
-*/
-
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
-	"strconv"
-	"encoding/json"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	
+	"github.com/hyperledger/fabric/core/crypto/primitives"
+	"github.com/op/go-logging"
 )
-//	"encoding/base64"
-// "github.com/op/go-logging"
-//var myLogger = logging.MustGetLogger("dojo_mgm")
 
-// BoletoPropostaChaincode - implementacao do chaincode
-type BoletoPropostaChaincode struct {
+var myLogger = logging.MustGetLogger("asset_mgm")
+
+// AssetManagementChaincode is simple chaincode implementing a basic Asset Management system
+// with access control enforcement at chaincode level.
+// Look here for more information on how to implement access control at chaincode level:
+// https://github.com/hyperledger/fabric/blob/master/docs/tech/application-ACL.md
+// An asset is simply represented by a string.
+type AssetManagementChaincode struct {
 }
 
-// Tipo Proposta para retornar a consulta JSON
-type Proposta struct {
-    id string `json:"id_proposta"`
-	cpfPagador string `json:"cpf_pagador"`
-	pagadorAceitou bool `json:"pagador_aceitou"`
-	beneficiarioAceitou bool `json:"beneficiario_aceitou"`
-	boletoPago bool `json:"boleto_pago"`
-}
-
-// ============================================================================================================================
-// Main
-// ============================================================================================================================
-func main() {
-	err := shim.Start(new(BoletoPropostaChaincode))
-	if err != nil {
-		fmt.Printf("Error starting BoletoPropostaChaincode chaincode: %s", err)
-	}
-}
-
-// Init resets all the things
-func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//myLogger.Debug("Init Chaincode...")
-	fmt.Println("Init Chaincode...")
-    
-	// Verificação da quantidade de argumentos recebidas
-	// Não estamos recebendo nenhum argumento
+// Init method will be called during deployment.
+// The deploy transaction metadata is supposed to contain the administrator cert
+func (t *AssetManagementChaincode) Init(stub shim.ChaincodeStubInterface) ([]byte, error) {
+	_, args := stub.GetFunctionAndParameters()
+	myLogger.Debug("Init Chaincode...")
 	if len(args) != 0 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 0")
 	}
 
-	// Set the admin
-	// The metadata will contain the certificate of the administrator
-	// adminCert, err := stub.GetCallerMetadata() 
-	// if err != nil {
-	// 	fmt.Println("Failed getting metadata")
-	// 	return nil, errors.New("Failed getting metadata.")
-	// }
-	// if len(adminCert) == 0 {
-	// 	fmt.Printf("Invalid admin certificate. Empty.")
-	// 	return nil, errors.New("Invalid admin certificate. Empty.")
-	// }
-
-	// fmt.Printf("The administrator is [%x]", adminCert)
-
-	// stub.PutState("admin", adminCert)
-
-	// Verifica se a tabela 'Proposta' existe
-	fmt.Println("Verificando se a tabela 'Proposta' existe...")
-	tbProposta, err := stub.GetTable("Proposta")
-	if err != nil {
-		fmt.Println("Falha ao executar stub.GetTable para a tabela 'Proposta'. [%v]", err)
-	}
-	// Se a tabela 'Proposta' já existir
-	if tbProposta != nil {	
-		err = stub.DeleteTable("Proposta")		// Excluir a tabela
-		fmt.Println("Tabela 'Proposta' excluída.")
-	}
-
-	fmt.Println("Criando a tabela 'Proposta'...")
-	// Criar tabela de Propostas	
-	err = stub.CreateTable("Proposta", []*shim.ColumnDefinition{
-		// Identificador da proposta (hash)
-		&shim.ColumnDefinition{Name: "Id", Type: shim.ColumnDefinition_STRING, Key: true},
-		// CPF do Pagador
-		&shim.ColumnDefinition{Name: "cpfPagador", Type: shim.ColumnDefinition_STRING, Key: false},
-		// Status de aceite do Pagador da proposta
-		&shim.ColumnDefinition{Name: "pagadorAceitou", Type: shim.ColumnDefinition_BOOL, Key: false},
-		// Status de aceite do Beneficiario da proposta
-		&shim.ColumnDefinition{Name: "beneficiarioAceitou", Type: shim.ColumnDefinition_BOOL, Key: false},
-		// Status do Pagamento do Boleto
-		&shim.ColumnDefinition{Name: "boletoPago", Type: shim.ColumnDefinition_BOOL, Key: false},
+	// Create ownership table
+	err := stub.CreateTable("AssetsOwnership", []*shim.ColumnDefinition{
+		&shim.ColumnDefinition{Name: "Asset", Type: shim.ColumnDefinition_STRING, Key: true},
+		&shim.ColumnDefinition{Name: "Owner", Type: shim.ColumnDefinition_BYTES, Key: false},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Falha ao criar a tabela 'Proposta'. [%v]", err)
-	} 
-	fmt.Println("Tabela 'Proposta' criada com sucesso.")
+		return nil, errors.New("Failed creating AssetsOnwership table.")
+	}
 
-	fmt.Println("Init Chaincode... Finalizado!")
+	// Set the admin
+	// The metadata will contain the certificate of the administrator
+	adminCert, err := stub.GetCallerMetadata() 
+	if err != nil {
+		myLogger.Debug("Failed getting metadata")
+		return nil, errors.New("Failed getting metadata.")
+	}
+	if len(adminCert) == 0 {
+		myLogger.Debug("Invalid admin certificate. Empty.")
+		return nil, errors.New("Invalid admin certificate. Empty.")
+	}
+
+	myLogger.Debug("The administrator is [%x]", adminCert)
+
+	stub.PutState("admin", adminCert)
+
+	myLogger.Debug("Init Chaincode...done")
 
 	return nil, nil
 }
 
-// registrarProposta: função Invoke para registrar uma nova proposta, recebendo os seguintes argumentos
-// args[0]: Id. Hash que identificará a proposta
-// args[1]: cpfPagador. CPF do Pagador
-// args[2]: pagadorAceitou. Status de aceite do Pagador da proposta
-// args[3]: beneficiarioAceitou. Status de aceite do Beneficiario da proposta
-// args[4]: boletoPago. Status do Pagamento do Boleto
-//
-func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	//myLogger.Debug("registrarProposta...")
-	fmt.Println("registrarProposta...")
+func (t *AssetManagementChaincode) assign(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	myLogger.Debug("Assign...")
 
-	// Verifica se a quantidade de argumentos recebidas corresponde a esperada
-	if len(args) != 5 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 5")
+	if len(args) != 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2")
 	}
 
-	// Obtem os valores dos argumentos e os prepara para salvar na tabela 'Proposta'
-	idProposta := args[0]
-	cpfPagador := args[1]
-	pagadorAceitou, err := strconv.ParseBool(args[2])
+	asset := args[0]
+	owner, err := base64.StdEncoding.DecodeString(args[1])
 	if err != nil {
-		return nil, errors.New("Failed decodinf pagadorAceitou")
+		return nil, errors.New("Failed decodinf owner")
 	}
-	beneficiarioAceitou, err := strconv.ParseBool(args[3])
+
+	// Verify the identity of the caller
+	// Only an administrator can invoker assign
+	adminCertificate, err := stub.GetState("admin")
 	if err != nil {
-		return nil, errors.New("Failed decodinf beneficiarioAceitou")
+		return nil, errors.New("Failed fetching admin identity")
 	}
-	boletoPago, err := strconv.ParseBool(args[4])
+
+	ok, err := t.isCaller(stub, adminCertificate)
 	if err != nil {
-		return nil, errors.New("Failed decodinf boletoPago")
+		return nil, errors.New("Failed checking admin identity")
+	}
+	if !ok {
+		return nil, errors.New("The caller is not an administrator")
 	}
 
-	// [To do] verificar identidade
+	// Register assignment
+	myLogger.Debugf("New owner of [%s] is [% x]", asset, owner)
 
-	// Registra a proposta na tabela 'Proposta'
-	//myLogger.Debugf("Criando Proposta Id [%s] para CPF nº [%s]", idProposta, cpfPagador)
-	fmt.Println("Criando Proposta Id [" + idProposta + "] para CPF nº ["+ cpfPagador +"]")
-	fmt.Printf("pagadorAceitou: " + strconv.FormatBool(pagadorAceitou)) 
-	fmt.Printf(" | beneficiarioAceitou: " + strconv.FormatBool(beneficiarioAceitou))
-	fmt.Printf(" | boletoPago: " + strconv.FormatBool(boletoPago) + "\n")
-
-	ok, err := stub.InsertRow("Proposta", shim.Row{
+	ok, err = stub.InsertRow("AssetsOwnership", shim.Row{
 		Columns: []*shim.Column{
-			&shim.Column{Value: &shim.Column_String_{String_: idProposta}},
-			&shim.Column{Value: &shim.Column_String_{String_: cpfPagador}},
-			&shim.Column{Value: &shim.Column_Bool{Bool: pagadorAceitou}},
-			&shim.Column{Value: &shim.Column_Bool{Bool: beneficiarioAceitou}},
-			&shim.Column{Value: &shim.Column_Bool{Bool: boletoPago}} },
+			&shim.Column{Value: &shim.Column_String_{String_: asset}},
+			&shim.Column{Value: &shim.Column_Bytes{Bytes: owner}}},
 	})
 
 	if !ok && err == nil {
-		// Atualmente está retornando que a Proposta já existe, mas podemos implementar o update da Proposta
-		return nil, errors.New("Proposta já existente.")
+		return nil, errors.New("Asset was already assigned.")
 	}
 
-	//myLogger.Debug("Proposta criada!")
-	fmt.Println("Proposta criada!")
+	myLogger.Debug("Assign...done!")
 
 	return nil, err
 }
 
-// consultarProposta: função Query para consultar uma proposta existente, recebendo os seguintes argumentos
-// args[0]: Id. Hash da proposta
-//
-func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	//myLogger.Debug("consultarProposta...")
-	fmt.Println("consultarProposta...")
+func (t *AssetManagementChaincode) transfer(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	myLogger.Debug("Transfer...")
 
-	var valAsBytes []byte
-
-	// Verifica se a quantidade de argumentos recebidas corresponde a esperada
-	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
+	if len(args) != 2 {
+		return nil, errors.New("Incorrect number of arguments. Expecting 2")
 	}
 
-	// Obtem os valores dos argumentos e os prepara para salvar na tabela 'Proposta'
-	idProposta := args[0]
+	asset := args[0]
+	newOwner, err := base64.StdEncoding.DecodeString(args[1])
+	if err != nil {
+		return nil, fmt.Errorf("Failed decoding owner")
+	}
 
-	// [To do] verificar identidade
-
-	// Define o valor de coluna a ser buscado
+	// Verify the identity of the caller
+	// Only the owner can transfer one of his assets
 	var columns []shim.Column
-	col1 := shim.Column{Value: &shim.Column_String_{String_: idProposta}}
+	col1 := shim.Column{Value: &shim.Column_String_{String_: asset}}
 	columns = append(columns, col1)
 
-	// Consulta a proposta na tabela 'Proposta'
-	row, err := stub.GetRow("Proposta", columns)
+	row, err := stub.GetRow("AssetsOwnership", columns)
 	if err != nil {
-		fmt.Println("Erro ao obter Proposta [%s]: [%s]", string(idProposta), err)
-		return nil, fmt.Errorf("Erro ao obter Proposta [%s]: [%s]", string(idProposta), err)
+		return nil, fmt.Errorf("Failed retrieving asset [%s]: [%s]", asset, err)
 	}
 
-	fmt.Println("Query finalizada [% x]", row.Columns[1].GetBytes())
+	prvOwner := row.Columns[1].GetBytes()
+	myLogger.Debugf("Previous owener of [%s] is [% x]", asset, prvOwner)
+	if len(prvOwner) == 0 {
+		return nil, fmt.Errorf("Invalid previous owner. Nil")
+	}
 
-	// objeto Proposta
-	var resProposta Proposta
-	resProposta.id = row.Columns[0].GetString_()
-	resProposta.cpfPagador = row.Columns[1].GetString_()
-	resProposta.pagadorAceitou = row.Columns[2].GetBool()
-	resProposta.beneficiarioAceitou = row.Columns[3].GetBool()
-	resProposta.boletoPago = row.Columns[4].GetBool()
+	// Verify ownership
+	ok, err := t.isCaller(stub, prvOwner)
+	if err != nil {
+		return nil, errors.New("Failed checking asset owner identity")
+	}
+	if !ok {
+		return nil, errors.New("The caller is not the owner of the asset")
+	}
 
-	fmt.Println("Valores da tabela: [%s], [%s], [%b], [%b], [%b]", row.Columns[0].GetString_(), row.Columns[1].GetString_(), row.Columns[2].GetBool(), row.Columns[3].GetBool(), row.Columns[3].GetBool())
+	// At this point, the proof of ownership is valid, then register transfer
+	err = stub.DeleteRow(
+		"AssetsOwnership",
+		[]shim.Column{shim.Column{Value: &shim.Column_String_{String_: asset}}},
+	)
+	if err != nil {
+		return nil, errors.New("Failed deliting row.")
+	}
 
-	fmt.Println("Proposta: [%s], [%s], [%b], [%b], [%b]", resProposta.id, resProposta.cpfPagador, resProposta.pagadorAceitou, resProposta.beneficiarioAceitou, resProposta.boletoPago)
+	_, err = stub.InsertRow(
+		"AssetsOwnership",
+		shim.Row{
+			Columns: []*shim.Column{
+				&shim.Column{Value: &shim.Column_String_{String_: asset}},
+				&shim.Column{Value: &shim.Column_Bytes{Bytes: newOwner}},
+			},
+		})
+	if err != nil {
+		return nil, errors.New("Failed inserting row.")
+	}
 
-	valAsBytes, err = json.Marshal(resProposta)
-	return valAsBytes, nil
+	myLogger.Debug("New owner of [%s] is [% x]", asset, newOwner)
+
+	myLogger.Debug("Transfer...done")
+
+	return nil, nil
+}
+
+func (t *AssetManagementChaincode) isCaller(stub shim.ChaincodeStubInterface, certificate []byte) (bool, error) {
+	myLogger.Debug("Check caller...")
+
+	// In order to enforce access control, we require that the
+	// metadata contains the signature under the signing key corresponding
+	// to the verification key inside certificate of
+	// the payload of the transaction (namely, function name and args) and
+	// the transaction binding (to avoid copying attacks)
+
+	// Verify \sigma=Sign(certificate.sk, tx.Payload||tx.Binding) against certificate.vk
+	// \sigma is in the metadata
+
+	sigma, err := stub.GetCallerMetadata()
+	if err != nil {
+		return false, errors.New("Failed getting metadata")
+	}
+	payload, err := stub.GetPayload()
+	if err != nil {
+		return false, errors.New("Failed getting payload")
+	}
+	binding, err := stub.GetBinding()
+	if err != nil {
+		return false, errors.New("Failed getting binding")
+	}
+
+	myLogger.Debugf("passed certificate [% x]", certificate)
+	myLogger.Debugf("passed sigma [% x]", sigma)
+	myLogger.Debugf("passed payload [% x]", payload)
+	myLogger.Debugf("passed binding [% x]", binding)
+
+	ok, err := stub.VerifySignature(
+		certificate,
+		sigma,
+		append(payload, binding...),
+	)
+	if err != nil {
+		myLogger.Errorf("Failed checking signature [%s]", err)
+		return ok, err
+	}
+	if !ok {
+		myLogger.Error("Invalid signature")
+	}
+
+	myLogger.Debug("Check caller...Verified!")
+
+	return ok, err
 }
 
 // Invoke will be called for every transaction.
 // Supported functions are the following:
-// "init": initialize the chaincode state, used as reset
-// "registrarProposta(Id, cpfPagador, pagadorAceitou, 
-// beneficiarioAceitou, boletoPago)": para registrar uma nova proposta.
+// "assign(asset, owner)": to assign ownership of assets. An asset can be owned by a single entity.
 // Only an administrator can call this function.
-// "consultarProposta(Id)": para consultar uma Proposta. 
-// Only the owner of the specific asset can call this function.
+// "transfer(asset, newOwner)": to transfer the ownership of an asset. Only the owner of the specific
+// asset can call this function.
 // An asset is any string to identify it. An owner is representated by one of his ECert/TCert.
-func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//myLogger.Debug("Invoke Chaincode...")
-	fmt.Println("Invoke Chaincode...")
-
-	fmt.Println("invoke is running " + function)
-
+func (t *AssetManagementChaincode) Invoke(stub shim.ChaincodeStubInterface) ([]byte, error) {
+	function, args := stub.GetFunctionAndParameters()
 	// Handle different functions
-	if function == "init" { //initialize the chaincode state, used as reset
-		return t.Init(stub, "init", args)
-	} else if function == "registrarProposta" {
-		// Registrar nova Proposta
-		return t.registrarProposta(stub, args)
+	if function == "assign" {
+		// Assign ownership
+		return t.assign(stub, args)
+	} else if function == "transfer" {
+		// Transfer ownership
+		return t.transfer(stub, args)
+	} else if function == "query" {
+		// Query owner
+		return t.query(stub, args)
 	}
-	fmt.Println("invoke did not find func: " + function) //error
 
-	return nil, errors.New("Received unknown function invocation: " + function)
+	return nil, errors.New("Received unknown function invocation")
 }
 
-// Query is our entry point for queries
-func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//myLogger.Debug("Query Chaincode...")
-	fmt.Println("Query Chaincode...")
+// Supported functions are the following:
+// "query(asset)": returns the owner of the asset.
+// Anyone can invoke this function.
+func (t *AssetManagementChaincode) query(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	var err error
 
-	fmt.Println("query is running " + function)
-
-	// Handle different functions
-	if function == "consultarProposta" { //read a variable
-		// Consultar uma Proposta existente
-		return t.consultarProposta(stub, args)
+	if len(args) != 1 {
+		myLogger.Debug("Incorrect number of arguments. Expecting name of an asset to query")
+		return nil, errors.New("Incorrect number of arguments. Expecting name of an asset to query")
 	}
-	// if function == "consultarTodas"{
-	// 	 return t.consultarTodasAsPropostas(stub,args)
-	// }
-	fmt.Println("query did not find func: " + function) //error
 
-	return nil, errors.New("Received unknown function query: " + function)
+	// Who is the owner of the asset?
+	asset := args[0]
+
+	myLogger.Debugf("Query [%s]", string(asset))
+
+	var columns []shim.Column
+	col1 := shim.Column{Value: &shim.Column_String_{String_: asset}}
+	columns = append(columns, col1)
+
+	row, err := stub.GetRow("AssetsOwnership", columns)
+	if err != nil {
+		myLogger.Debugf("Failed retriving asset [%s]: [%s]", string(asset), err)
+		return nil, fmt.Errorf("Failed retriving asset [%s]: [%s]", string(asset), err)
+	}
+
+	myLogger.Debugf("Query done [% x]", row.Columns[1].GetBytes())
+
+	return row.Columns[1].GetBytes(), nil
 }
 
-// func (t *BoletoPropostaChaincode) consultarTodasAsPropostas(stub shim.ChaincodeStubInterface,args []string) ([]byte, error) {
-//     fmt.Println("[consultarTodasAsPropostas] Verificando Autorização de Admin...")
-    
-// 	    // Recover the role that is allowed to make assignments
-// 	admin, err := stub.GetState("admin")
-// 	if err != nil {
-// 		fmt.Printf("Error getting role [%v] \n", err)
-// 		return nil, errors.New("Failed fetching assigner role")
-// 	}
-
-// 	callerRole, err := stub.ReadCertAttribute("role")
-// 	if err != nil {
-// 		fmt.Printf("Error reading attribute 'role' [%v] \n", err)
-// 		return nil, fmt.Errorf("Failed fetching caller role. Error was [%v]", err)
-// 	}
-
-//     caller := string(callerRole[:])
-// 	regulator := string(admin[:])
-
-// 	if caller != regulator {
-// 		fmt.Printf("Caller is not admin - caller %v admin %v\n", caller, regulator)
-// 		return nil, fmt.Errorf("The caller does not have the rights to invoke assign. Expected role [%v], caller role [%v]", regulator, caller)
-// 	}
-    
-// 	fmt.Printf("[getTransaction] Regulator authorized! [%v]" , args[0])
-
-//      return nil,nil
-// }
+func main() {
+	primitives.SetSecurityLevel("SHA3", 256)
+	err := shim.Start(new(AssetManagementChaincode))
+	if err != nil {
+		fmt.Printf("Error starting AssetManagementChaincode: %s", err)
+	}
+}
