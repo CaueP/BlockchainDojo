@@ -56,7 +56,10 @@ func main() {
 	}
 }
 
-// Init resets all the things
+// ============================================================================================================================
+// Init
+// 		Inicia a tabela de proposta
+// ============================================================================================================================
 func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	//myLogger.Debug("Init Chaincode...")
 	fmt.Println("Init Chaincode...")
@@ -102,6 +105,38 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 	fmt.Println("Init Chaincode... Finalizado!")
 
 	return nil, nil
+}
+
+
+// ============================================================================================================================
+// Invoke
+// ============================================================================================================================
+
+// Invoke will be called for every transaction.
+// Supported functions are the following:
+// "init": initialize the chaincode state, used as reset
+// "registrarProposta(Id, cpfPagador, pagadorAceitou, 
+// beneficiarioAceitou, boletoPago)": para registrar uma nova proposta.
+// Only an administrator can call this function.
+// "consultarProposta(Id)": para consultar uma Proposta. 
+// Only the owner of the specific asset can call this function.
+// An asset is any string to identify it. An owner is representated by one of his ECert/TCert.
+func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	//myLogger.Debug("Invoke Chaincode...")
+	fmt.Println("Invoke Chaincode...")
+
+	fmt.Println("invoke is running " + function)
+
+	// Handle different functions
+	if function == "init" { //initialize the chaincode state, used as reset
+		return t.Init(stub, "init", args)
+	} else if function == "registrarProposta" {
+		// Registrar nova Proposta
+		return t.registrarProposta(stub, args)
+	}
+	fmt.Println("invoke did not find func: " + function) //error
+
+	return nil, errors.New("Received unknown function invocation: " + function)
 }
 
 // registrarProposta: função Invoke para registrar uma nova proposta, recebendo os seguintes argumentos
@@ -170,6 +205,28 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 	//return nil, err
 }
 
+// ============================================================================================================================
+// Query
+// ============================================================================================================================
+
+// Query is our entry point for queries
+func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	//myLogger.Debug("Query Chaincode...")
+	fmt.Println("Query Chaincode...")
+
+	fmt.Println("query is running " + function)
+
+	// Handle different functions
+	if function == "consultarProposta" { //read a variable
+		// Consultar uma Proposta existente
+		return t.consultarProposta(stub, args)
+	}
+	fmt.Println("query did not find func: " + function) //error
+
+	return nil, errors.New("Received unknown function query: " + function)
+}
+
+
 // consultarProposta: função Query para consultar uma proposta existente, recebendo os seguintes argumentos
 // args[0]: Id. Hash da proposta
 //
@@ -225,48 +282,4 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	}
 
 	return valAsBytes, nil
-}
-
-// Invoke will be called for every transaction.
-// Supported functions are the following:
-// "init": initialize the chaincode state, used as reset
-// "registrarProposta(Id, cpfPagador, pagadorAceitou, 
-// beneficiarioAceitou, boletoPago)": para registrar uma nova proposta.
-// Only an administrator can call this function.
-// "consultarProposta(Id)": para consultar uma Proposta. 
-// Only the owner of the specific asset can call this function.
-// An asset is any string to identify it. An owner is representated by one of his ECert/TCert.
-func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//myLogger.Debug("Invoke Chaincode...")
-	fmt.Println("Invoke Chaincode...")
-
-	fmt.Println("invoke is running " + function)
-
-	// Handle different functions
-	if function == "init" { //initialize the chaincode state, used as reset
-		return t.Init(stub, "init", args)
-	} else if function == "registrarProposta" {
-		// Registrar nova Proposta
-		return t.registrarProposta(stub, args)
-	}
-	fmt.Println("invoke did not find func: " + function) //error
-
-	return nil, errors.New("Received unknown function invocation: " + function)
-}
-
-// Query is our entry point for queries
-func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//myLogger.Debug("Query Chaincode...")
-	fmt.Println("Query Chaincode...")
-
-	fmt.Println("query is running " + function)
-
-	// Handle different functions
-	if function == "consultarProposta" { //read a variable
-		// Consultar uma Proposta existente
-		return t.consultarProposta(stub, args)
-	}
-	fmt.Println("query did not find func: " + function) //error
-
-	return nil, errors.New("Received unknown function query: " + function)
 }
