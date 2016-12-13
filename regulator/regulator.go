@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"errors"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	pb "github.com/hyperledger/fabric/protos"
 	"github.com/hyperledger/fabric/core/crypto"
 )
 
