@@ -39,11 +39,11 @@ type BoletoPropostaChaincode struct {
 
 // Tipo Proposta para retornar a consulta JSON
 type Proposta struct {
-    id					string	`json:"id_proposta"`
-	cpfPagador			string 	`json:"cpf_pagador"`
-	pagadorAceitou 		bool 	`json:"pagador_aceitou"`
-	beneficiarioAceitou bool 	`json:"beneficiario_aceitou"`
-	boletoPago 			bool 	`json:"boleto_pago"`
+    ID					string	`json:"id_proposta"`
+	CpfPagador			string 	`json:"cpf_pagador"`
+	PagadorAceitou 		bool 	`json:"pagador_aceitou"`
+	BeneficiarioAceitou bool 	`json:"beneficiario_aceitou"`
+	BoletoPago 			bool 	`json:"boleto_pago"`
 }
 
 // consts associadas à tabela de Propostas
@@ -294,24 +294,23 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	// objeto Proposta
 	
 	
-	resProposta.id = row.Columns[0].GetString_()
-	resProposta.cpfPagador = row.Columns[1].GetString_()
-	resProposta.pagadorAceitou = row.Columns[2].GetBool()
-	resProposta.beneficiarioAceitou = row.Columns[3].GetBool()
-	resProposta.boletoPago = row.Columns[4].GetBool()
+	resProposta.ID = row.Columns[0].GetString_()
+	resProposta.CpfPagador = row.Columns[1].GetString_()
+	resProposta.PagadorAceitou = row.Columns[2].GetBool()
+	resProposta.BeneficiarioAceitou = row.Columns[3].GetBool()
+	resProposta.BoletoPago = row.Columns[4].GetBool()
 
 	// Inserir resultado na lista de propostas
 	listaPropostas = append(listaPropostas, resProposta)
 
-	fmt.Println("Valores da tabela: [%s], [%s], [%b], [%b], [%b]", row.Columns[0].GetString_(), row.Columns[1].GetString_(), row.Columns[2].GetBool(), row.Columns[3].GetBool(), row.Columns[4].GetBool())
+	//fmt.Println("Valores da tabela: [%s], [%s], [%b], [%b], [%b]", row.Columns[0].GetString_(), row.Columns[1].GetString_(), row.Columns[2].GetBool(), row.Columns[3].GetBool(), row.Columns[4].GetBool())
 
-	fmt.Println("Proposta: [%s], [%s], [%b], [%b], [%b]", resProposta.id, resProposta.cpfPagador, resProposta.pagadorAceitou, resProposta.beneficiarioAceitou, resProposta.boletoPago)
+	fmt.Println("Proposta: [%s], [%s], [%b], [%b], [%b]", resProposta.ID, resProposta.CpfPagador, resProposta.PagadorAceitou, resProposta.BeneficiarioAceitou, resProposta.BoletoPago)
 
-	var jsonString = `{"id":"`+ resProposta.id + `"` + `"cpfPagador":"`+ resProposta.cpfPagador + `"` + `"pagadorAceitou":"`+ strconv.FormatBool(resProposta.pagadorAceitou) + `"` + `"beneficiarioAceitou":"`+ strconv.FormatBool(resProposta.beneficiarioAceitou) + `"` + `"boletoPago":"`+ strconv.FormatBool(resProposta.boletoPago) + `"` +`}`
+	//var jsonString = `{"id":"`+ resProposta.ID + `"` + `"cpfPagador":"`+ resProposta.CpfPagador + `"` + `"pagadorAceitou":"`+ strconv.FormatBool(resProposta.PagadorAceitou) + `"` + `"beneficiarioAceitou":"`+ strconv.FormatBool(resProposta.BeneficiarioAceitou) + `"` + `"boletoPago":"`+ strconv.FormatBool(resProposta.BoletoPago) + `"` +`}`
+	//valAsBytes, err = json.Marshal(jsonString)
 
-	valAsBytes, err = json.Marshal(jsonString)
-
-	//valAsBytes, err = json.Marshal(resProposta)
+	valAsBytes, err = json.Marshal(resProposta)
 	if err != nil {
 			return nil, fmt.Errorf("Query operation failed. Error marshaling JSON: %s", err)
 	}
