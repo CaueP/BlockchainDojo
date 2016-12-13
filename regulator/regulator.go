@@ -28,7 +28,7 @@ func main() {
 		fmt.Printf("Error starting Simple chaincode: %s", err)
 	}
 	    
-	resp, err := initCryptoClients()
+	err := initCryptoClients()
 	if err != nil {
 		fmt.Printf("Failed initializing clients [%s]", err)
 	}
@@ -53,58 +53,11 @@ func initCryptoClients() error {
 	return nil
 }
 
-func deployInternal() (resp *pb.Response, err error) {
-	
-    fmt.Printf("[deployInternal] deploying...")
-	adminCert, err = admin.GetTCertificateHandlerNext()
-	if err != nil {
-		fmt.Printf("Failed getting Bob TCert [%s]", err)
-		return
-	}
-
-	// Prepare the spec. The metadata includes the identity of the administrator
-	spec := &pb.ChaincodeSpec{
-		Type:        1,
-		ChaincodeID: &pb.ChaincodeID{Path: "github.com/CaueP/BlockchainDojo/regulator"},
-		//ChaincodeID:          &pb.ChaincodeID{Name: chaincodeName},
-		CtorMsg:              &pb.ChaincodeInput{Args: util.ToChaincodeArgs("init")},
-		Metadata:             adminCert.GetCertificate(),
-		ConfidentialityLevel: pb.ConfidentialityLevel_PUBLIC,
-	}
-  
-	// First build the deployment spec
-	cds, err := getChaincodeBytes(spec)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting deployment spec: %s ", err)
-	}
-
-	// Now create the Transactions message and send to Peer.
-	transaction, err := admin.NewChaincodeDeployTransaction(cds, cds.ChaincodeSpec.ChaincodeID.Name)
-	if err != nil {
-		return nil, fmt.Errorf("Error deploying chaincode: %s ", err)
-	}
-
-	resp, err = processTransaction(transaction)
-
-	fmt.Printf("resp [%s]", resp.String())
-
-	chaincodeName = cds.ChaincodeSpec.ChaincodeID.Name
-	fmt.Printf("ChaincodeName [%s]", chaincodeName)
-
-	return
-}
-
 func(t *adminStructState) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("[init] Init Chaincode")
 	if len(args) != 0 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 0")
 	}	
-
-	resp, err := deployInternal()
-	if err != nil {
-		fmt.Errorf("Failed deploying / getting admin cert[%s]", err)
-		return
-	}
      // Set the admin
 	// The metadata will contain the certificate of the administrator
 	fmt.Println("Getting caller metadata")
