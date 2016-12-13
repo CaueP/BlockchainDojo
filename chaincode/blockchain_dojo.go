@@ -21,10 +21,10 @@ Implementação iniciada por Caue Garcia Polimanti e Vitor Diego dos Santos de S
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
-	"encoding/json"
+	"strconv"	
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	
@@ -258,9 +258,10 @@ func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, functi
 func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	//myLogger.Debug("consultarProposta...")
 	fmt.Println("consultarProposta...")
-	var tamLista int
-	var valAsBytes []byte
-
+	var listaPropostas []Proposta	// lista de Propostas
+	var resProposta Proposta		// Proposta
+	var valAsBytes []byte			// retorno do json em bytes
+	
 	// Verifica se a quantidade de argumentos recebidas corresponde a esperada
 	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 1")
@@ -285,15 +286,14 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 
 	// se nao encontrar nenhuma proposta correspondente
 	if len(row.Columns) == 0 || row.Columns[2] == nil { 
-		return nil, fmt.Errorf("Proposta [%s] não existente.", string(idProposta))
+		return nil, fmt.Errorf("Proposta [%s] não existente.", string(idProposta))	// retorno do erro para o json
 	}
 
 	fmt.Println("Query finalizada [% x]", row.Columns[1].GetBytes())
 
 	// objeto Proposta
 	
-	var listaPropostas []Proposta
-	var resProposta Proposta
+	
 	resProposta.id = row.Columns[0].GetString_()
 	resProposta.cpfPagador = row.Columns[1].GetString_()
 	resProposta.pagadorAceitou = row.Columns[2].GetBool()
@@ -307,14 +307,14 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 
 	fmt.Println("Proposta: [%s], [%s], [%b], [%b], [%b]", resProposta.id, resProposta.cpfPagador, resProposta.pagadorAceitou, resProposta.beneficiarioAceitou, resProposta.boletoPago)
 
-	valAsBytes, err = json.Marshal(listaPropostas)
+	var jsonString = "{\"id\":\""+ resProposta.id + "\"}"
+
+	valAsBytes, err = json.Marshal(jsonString)
+
+	//valAsBytes, err = json.Marshal(resProposta)
 	if err != nil {
 			return nil, fmt.Errorf("Query operation failed. Error marshaling JSON: %s", err)
 	}
-
-	tamLista = len(listaPropostas)
-
-	valAsBytes, err = json.Marshal(tamLista)
 
 	return valAsBytes, nil
 }
