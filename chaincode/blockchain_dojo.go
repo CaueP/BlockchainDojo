@@ -159,6 +159,8 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 	//myLogger.Debug("registrarProposta...")
 	fmt.Println("registrarProposta...")
 
+	var jsonResp string
+
 	// Verifica se a quantidade de argumentos recebidas corresponde a esperada
 	if len(args) != 5 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 5")
@@ -200,35 +202,39 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 
 	// false and no error if a row already exists for the given key.
 	if !ok && err == nil {
-		// Atualmente está retornando que a Proposta já existe, mas podemos implementar o update da Proposta
+		// Apenas retornar que a proposta existe
 		//return nil, errors.New("Proposta já existente.")
-		jsonResp := "{\"registrado\":\"" + "False" + "\"}"
-		return []byte(jsonResp), errors.New("Proposta já existente.")
+		//jsonResp = "{\"registrado\":\"" + "False" + "\"}"
+		//return []byte(jsonResp), errors.New("Proposta já existente.")
 
-		/* Trecho para substituir um record
-		//replace the old record row associated with the account ID with the new record row
-		ok, err := stub.ReplaceRow(tableColumn, shim.Row{
+		// /* 
+		// Trecho para atualizar uma proposta existente
+		//	substitui um registro existente em uma linha com o registro associado ao idProposta recebido
+		ok, err := stub.ReplaceRow(nomeTabelaProposta, shim.Row{
 			Columns: []*shim.Column{
-				&shim.Column{Value: &shim.Column_String_{String_: accountID}},
-				&shim.Column{Value: &shim.Column_String_{String_: contactInfo}},
-				&shim.Column{Value: &shim.Column_Uint64{Uint64: amount}}},
+				&shim.Column{Value: &shim.Column_String_{String_: idProposta}},
+			&shim.Column{Value: &shim.Column_String_{String_: cpfPagador}},
+			&shim.Column{Value: &shim.Column_Bool{Bool: pagadorAceitou}},
+			&shim.Column{Value: &shim.Column_Bool{Bool: beneficiarioAceitou}},
+			&shim.Column{Value: &shim.Column_Bool{Bool: boletoPago}} },
 		})
 
+		jsonResp = "{\"atualizado\":\"" + "True" + "\"}"
+
 		if !ok && err == nil {
-			myLogger.Errorf("system error %v", err)
-			return errors.New("failed to replace row with account Id." + accountID)
+			//myLogger.Errorf("system error %v", err)
+			return []byte(jsonResp), errors.New("Falha ao atualizar a Proposta nº " + idProposta)
 		}
-		*/
+		//*/
 	}
 
 	//myLogger.Debug("Proposta criada!")
 	fmt.Println("Proposta criada!")
 
-	jsonResp := "{\"registrado\":\"" + "True" + "\"}"
+	jsonResp = "{\"registrado\":\"" + "True" + "\"}"
 	return []byte(jsonResp), err
-
-	//return nil, err
 }
+
 
 // ============================================================================================================================
 // Query
@@ -291,9 +297,7 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 
 	fmt.Println("Query finalizada [% x]", row.Columns[1].GetBytes())
 
-	// objeto Proposta
-	
-	
+	// Criação do objeto Proposta	
 	resProposta.ID = row.Columns[0].GetString_()
 	resProposta.CpfPagador = row.Columns[1].GetString_()
 	resProposta.PagadorAceitou = row.Columns[2].GetBool()
@@ -303,13 +307,9 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	// Inserir resultado na lista de propostas
 	listaPropostas = append(listaPropostas, resProposta)
 
-	//fmt.Println("Valores da tabela: [%s], [%s], [%b], [%b], [%b]", row.Columns[0].GetString_(), row.Columns[1].GetString_(), row.Columns[2].GetBool(), row.Columns[3].GetBool(), row.Columns[4].GetBool())
-
 	fmt.Println("Proposta: [%s], [%s], [%b], [%b], [%b]", resProposta.ID, resProposta.CpfPagador, resProposta.PagadorAceitou, resProposta.BeneficiarioAceitou, resProposta.BoletoPago)
 
-	//var jsonString = `{"id":"`+ resProposta.ID + `"` + `"cpfPagador":"`+ resProposta.CpfPagador + `"` + `"pagadorAceitou":"`+ strconv.FormatBool(resProposta.PagadorAceitou) + `"` + `"beneficiarioAceitou":"`+ strconv.FormatBool(resProposta.BeneficiarioAceitou) + `"` + `"boletoPago":"`+ strconv.FormatBool(resProposta.BoletoPago) + `"` +`}`
-	//valAsBytes, err = json.Marshal(jsonString)
-
+	// Converter o objeto da Proposta para Bytes, para retorná-lo
 	valAsBytes, err = json.Marshal(resProposta)
 	if err != nil {
 			return nil, fmt.Errorf("Query operation failed. Error marshaling JSON: %s", err)
