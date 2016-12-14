@@ -242,7 +242,7 @@ func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, functi
 func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	fmt.Println("consultarProposta...")
 	
-	var resProposta Proposta		// Proposta
+	//var resProposta Proposta		// Proposta
 	var propostaAsBytes []byte		// retorno do json em bytes
 	
 	// Verifica se a quantidade de argumentos recebidas corresponde a esperada
