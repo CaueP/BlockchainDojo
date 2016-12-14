@@ -25,12 +25,13 @@ func main() {
 	err := shim.Start(new(adminStructState))
 	if err != nil {
 		fmt.Printf("Error starting Simple chaincode: %s", err)
-	}
-	    
+	}    
+		
 	err = initCryptoClients()
 	if err != nil {
 		fmt.Printf("Failed initializing clients [%s]", err)
 	}
+
 }
 
 func initCryptoClients() error {
