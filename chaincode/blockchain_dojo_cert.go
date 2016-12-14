@@ -30,7 +30,7 @@ import (
 	"strconv"	
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	
+	"github.com/hyperledger/fabric/core/crypto/primitives"
 )
 // "github.com/op/go-logging"
 //var myLogger = logging.MustGetLogger("dojo_mgm")
@@ -61,6 +61,7 @@ const (
 // Main
 // ============================================================================================================================
 func main() {
+	primitives.SetSecurityLevel("SHA3", 256)
 	err := shim.Start(new(BoletoPropostaChaincode))
 	if err != nil {
 		fmt.Printf("Error starting BoletoPropostaChaincode chaincode: %s", err)
@@ -111,6 +112,25 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 		return nil, fmt.Errorf("Falha ao criar a tabela " + nomeTabelaProposta + ". [%v]", err)
 	} 
 	fmt.Println("Tabela " + nomeTabelaProposta + " criada com sucesso.")
+
+
+
+	// Set the admin
+	// The metadata will contain the certificate of the administrator
+	adminCert, err := stub.GetCallerMetadata()
+	if err != nil {
+		fmt.Println("Failed getting metadata")
+		return nil, errors.New("Failed getting metadata.")
+	}
+	if len(adminCert) == 0 {
+		fmt.Println("Invalid admin certificate. Empty.")
+		return nil, errors.New("Invalid admin certificate. Empty.")
+	}
+
+	fmt.Println("The administrator is [%x]", adminCert)
+
+	stub.PutState("admin", adminCert)
+
 
 	fmt.Println("Init Chaincode... Finalizado!")
 
