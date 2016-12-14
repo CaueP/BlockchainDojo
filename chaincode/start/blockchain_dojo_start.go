@@ -22,12 +22,13 @@ Implementação iniciada por Caue Garcia Polimanti e Vitor Diego dos Santos de S
 package main
 
 // lista de imports
+// "encoding/json"	-> enconding para json
+// "strconv" -> conversor de strings
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
+	
 	"github.com/hyperledger/fabric/core/chaincode/shim"	
 )
 
@@ -120,17 +121,13 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 // Invoke - Ponto de entrada para chamadas do tipo Invoke.
 // Funções suportadas:
 // "init": inicializa o estado do chaincode, também utilizado como reset
-// "registrarProposta(Id, cpfPagador, pagadorAceitou, 
-// beneficiarioAceitou, boletoPago)": para registrar uma nova proposta ou atualizar uma já existente.
-// Only an administrator can call this function.
-// "consultarProposta(Id)": para consultar uma Proposta existente. 
-// Only the owner of the specific asset can call this function.
-// An asset is any string to identify it. An owner is representated by one of his ECert/TCert.
+// "registrarProposta(Id, cpfPagador, pagadorAceitou, beneficiarioAceitou, 
+// boletoPago)": para registrar uma nova proposta ou atualizar uma já existente.
 func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("Invoke Chaincode...")
 	fmt.Println("invoke is running " + function)
 
-	// Estrutura de Seleção para escolher qual função será chamada, 
+	// Estrutura de Seleção para escolher qual função será executada, 
 	// de acordo com a funcao chamada
 	
 
@@ -150,7 +147,6 @@ func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, funct
 // args[3]: beneficiarioAceitou. Status de aceite do Beneficiario da proposta
 // args[4]: boletoPago. Status do Pagamento do Boleto
 func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	//myLogger.Debug("registrarProposta...")
 	fmt.Println("registrarProposta...")
 
 	// Verifica se a quantidade de argumentos recebidas corresponde a esperada
@@ -194,8 +190,8 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 
 
 
-	// Caso a proposta já exista (false and no error if a row already exists for the given key).
-	if !ok && err == nil {
+	// Caso a proposta já exista
+	
 		// Trecho para atualizar uma proposta existente
 		// substitui um registro existente em uma linha com o registro associado ao idProposta recebido nos argumentos
 
@@ -205,12 +201,11 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 
 
 		
-		return nil, nil		
-	}
+
 
 	fmt.Println("Proposta criada!")
 
-	return nil, err
+	return nil, nil
 }
 
 
@@ -224,12 +219,11 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 // Funções suportadas:
 // "consultarProposta(Id)": para consultar uma proposta existente
 func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//myLogger.Debug("Query Chaincode...")
 	fmt.Println("Query Chaincode...")
 
 	fmt.Println("query is running " + function)
 
-	// Estrutura de Seleção para escolher qual função será chamada, 
+	// Estrutura de Seleção para escolher qual função será executada, 
 	// de acordo com a funcao chamada
 
 
@@ -251,9 +245,10 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	var propostaAsBytes []byte		// retorno do json em bytes
 	
 	// Verifica se a quantidade de argumentos recebidas corresponde a esperada
-	if len(args) != 1 {
-		return nil, errors.New("Incorrect number of arguments. Expecting 1")
-	}
+
+
+
+
 
 	// Obtem os valores dos argumentos e os prepara para salvar na tabela 'Proposta'
 	
@@ -278,7 +273,6 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 
 
 
-	fmt.Println("Query finalizada [% x]", row.Columns[1].GetBytes())
 
 	// Criação do objeto Proposta	
 	
