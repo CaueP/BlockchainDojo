@@ -216,13 +216,28 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 
 	// [To do] verificar identidade
 
+	// Verify the identity of the caller
+	// Only an administrator can invoker assign
+	adminCertificate, err := stub.GetState("admin")
+	if err != nil {
+		return nil, errors.New("Failed fetching admin identity")
+	}
+
+	ok, err := t.isCaller(stub, adminCertificate)
+	if err != nil {
+		return nil, errors.New("Failed checking admin identity")
+	}
+	if !ok {
+		return nil, errors.New("The caller is not an administrator")
+	}
+
 	// Registra a proposta na tabela 'Proposta'
 	fmt.Println("Criando Proposta Id [" + idProposta + "] para CPF nº ["+ cpfPagador +"]")
 	fmt.Printf("pagadorAceitou: " + strconv.FormatBool(pagadorAceitou)) 
 	fmt.Printf(" | beneficiarioAceitou: " + strconv.FormatBool(beneficiarioAceitou))
 	fmt.Printf(" | boletoPago: " + strconv.FormatBool(boletoPago) + "\n")
 
-	ok, err := stub.InsertRow(nomeTabelaProposta, shim.Row{
+	ok, err = stub.InsertRow(nomeTabelaProposta, shim.Row{
 		Columns: []*shim.Column{
 			&shim.Column{Value: &shim.Column_String_{String_: idProposta}},
 			&shim.Column{Value: &shim.Column_String_{String_: cpfPagador}},
@@ -353,4 +368,54 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	}
 	// retorna o objeto em bytes
 	return propostaAsBytes, nil
+}
+
+
+// isCaller: função utilizada para verificar quem é o caller da chamada
+func (t *BoletoPropostaChaincode) isCaller(stub shim.ChaincodeStubInterface, certificate []byte) (bool, error) {
+	fmt.Println("Check caller...")
+
+	// In order to enforce access control, we require that the
+	// metadata contains the signature under the signing key corresponding
+	// to the verification key inside certificate of
+	// the payload of the transaction (namely, function name and args) and
+	// the transaction binding (to avoid copying attacks)
+
+	// Verify \sigma=Sign(certificate.sk, tx.Payload||tx.Binding) against certificate.vk
+	// \sigma is in the metadata
+
+	sigma, err := stub.GetCallerMetadata()
+	if err != nil {
+		return false, errors.New("Failed getting metadata")
+	}
+	payload, err := stub.GetPayload()
+	if err != nil {
+		return false, errors.New("Failed getting payload")
+	}
+	binding, err := stub.GetBinding()
+	if err != nil {
+		return false, errors.New("Failed getting binding")
+	}
+
+	fmt.Println("passed certificate [% x]", certificate)
+	fmt.Println("passed sigma [% x]", sigma)
+	fmt.Println("passed payload [% x]", payload)
+	fmt.Println("passed binding [% x]", binding)
+
+	ok, err := stub.VerifySignature(
+		certificate,
+		sigma,
+		append(payload, binding...),
+	)
+	if err != nil {
+		fmt.Println("Failed checking signature [%s]", err)
+		return ok, err
+	}
+	if !ok {
+		fmt.Println("Invalid signature")
+	}
+
+	fmt.Println("Check caller...Verified!")
+
+	return ok, err
 }
