@@ -404,7 +404,7 @@ func (t *BoletoPropostaChaincode) isCaller(stub shim.ChaincodeStubInterface, cer
 	//fmt.Println("passed binding [% x]", binding)
 
 	// valida se os slices são iguais
-	if reflect.DeepEqual(certificate, sigma) {
+	if !reflect.DeepEqual(certificate, sigma) {
 		fmt.Println("Invalid signature")
 		return false, errors.New("Certificado inválido")
 	}
