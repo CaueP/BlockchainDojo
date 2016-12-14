@@ -33,7 +33,8 @@ import (
 )
 
 // BoletoPropostaChaincode - implementacao do chaincode
-
+type BoletoPropostaChaincode struct {
+}
 
 
 
@@ -78,7 +79,7 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 
 
 	// Verifica se a tabela 'Proposta' existe
-	fmt.Println("Verificando se a tabela " + nomeTabelaProposta + " existe...")
+	fmt.Println("Verificando se a tabela 'Proposta' existe...")
 	
 
 
@@ -90,7 +91,7 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 
 
 	// Criar tabela de Propostas
-	fmt.Println("Criando a tabela " + nomeTabelaProposta + "...")
+	fmt.Println("Criando a tabela 'Proposta'...")
 	
 
 
@@ -106,7 +107,7 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 
 
 
-	fmt.Println("Tabela " + nomeTabelaProposta + " criada com sucesso.")
+	fmt.Println("Tabela 'Proposta' criada com sucesso.")
 
 	fmt.Println("Init Chaincode... Finalizado!")
 
