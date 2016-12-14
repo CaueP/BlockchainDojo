@@ -137,7 +137,7 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 		//return nil, errors.New("Invalid admin certificate (adminCert). Empty.")
 	}
 
-	//fmt.Println("The administrator is [%x]", adminCert)
+	fmt.Println("The administrator is [%x]", adminCert)
 
 	//stub.PutState("admin", adminCert)
 
