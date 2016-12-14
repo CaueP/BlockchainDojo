@@ -49,6 +49,8 @@ func initCryptoClients() error {
 		return err
 	}
 
+	fmt.Printf("[initCryptoClients] Success [v%]")
+
 	return nil
 }
 
@@ -60,7 +62,7 @@ func(t *adminStructState) Init(stub shim.ChaincodeStubInterface, function string
      // Set the admin
 	// The metadata will contain the certificate of the administrator
 	fmt.Println("Getting caller metadata")
-	adminCert, err := stub.GetCallerMetadata() //stub.GetCallerMetadata() 
+	adminCert, err := stub.GetCallerMetadata()
 	if err != nil {
 		fmt.Println("Failed getting metadata")
 		return nil, errors.New("Failed getting metadata.")
@@ -100,8 +102,22 @@ func (t *adminStructState) read(stub shim.ChaincodeStubInterface, args []string)
 		fmt.Printf("Error getting role [%v] \n", err)
 		return nil, errors.New("Failed fetching assigner role")
 	}
+
+	callerRole, err := stub.ReadCertAttribute("role")
+	if err != nil {
+		fmt.Printf("Error reading attribute 'role' [%v] \n", err)
+		return nil, fmt.Errorf("Failed fetching caller role. Error was [%v]", err)
+	}
+
+	caller := string(callerRole[:])
 	regulator := string(admin[:])
-	fmt.Printf("[getTransaction] Regulator authorized! [%v]" , regulator)
+
+	if caller != regulator {
+		fmt.Printf("Caller is not assigner - caller %v assigner %v\n", caller, regulator)
+		return nil, fmt.Errorf("The caller does not have the rights to invoke assign. Expected role [%v], caller role [%v]", regulator, caller)
+	}
+
+	fmt.Printf("[getTransaction] Caller authorized! [%v]" , regulator)
 
     return nil,nil
 }
