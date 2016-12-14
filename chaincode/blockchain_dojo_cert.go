@@ -120,26 +120,26 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 	adminMeta, err := stub.GetCallerMetadata()
 	if err != nil {
 		fmt.Println("Failed getting metadata")
-		return nil, errors.New("Failed getting metadata.")
+		//return nil, errors.New("Failed getting metadata.")
 	}
 	if len(adminMeta) == 0 {
 		fmt.Println("Invalid admin certificate (adminMeta). Empty.")
-		return nil, errors.New("Invalid admin certificate (adminMeta). Empty.")
+		//return nil, errors.New("Invalid admin certificate (adminMeta). Empty.")
 	}
 
 	adminCert, err := stub.GetCallerCertificate()
 	if err != nil {
 		fmt.Println("Failed getting metadata")
-		return nil, errors.New("Failed getting metadata.")
+		//return nil, errors.New("Failed getting metadata.")
 	}
 	if len(adminCert) == 0 {
 		fmt.Println("Invalid admin certificate (adminCert). Empty.")
-		return nil, errors.New("Invalid admin certificate (adminCert). Empty.")
+		//return nil, errors.New("Invalid admin certificate (adminCert). Empty.")
 	}
 
-	fmt.Println("The administrator is [%x]", adminCert)
+	//fmt.Println("The administrator is [%x]", adminCert)
 
-	stub.PutState("admin", adminCert)
+	//stub.PutState("admin", adminCert)
 
 
 	fmt.Println("Init Chaincode... Finalizado!")
