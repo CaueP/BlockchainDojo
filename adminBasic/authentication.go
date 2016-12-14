@@ -25,7 +25,7 @@ func main() {
 
 func(t *adminStructState) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	fmt.Println("[init] Init Chaincode")
-	if len(args) != 0 {
+	if len(args) != 1 {
 		return nil, errors.New("Incorrect number of arguments. Expecting 0")
 	}	
      // Set the admin
