@@ -407,8 +407,7 @@ func (t *BoletoPropostaChaincode) isCaller(stub shim.ChaincodeStubInterface, cer
 	if !reflect.DeepEqual(certificate, sigma) {
 		fmt.Println("Invalid signature")
 		return false, errors.New("Certificado inválido")
-	}
-	
+	}	
 
 	/*
 	ok, err := stub.VerifySignature(
