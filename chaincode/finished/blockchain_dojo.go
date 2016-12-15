@@ -31,8 +31,6 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	
 )
-// "github.com/op/go-logging"
-//var myLogger = logging.MustGetLogger("dojo_mgm")
 
 // BoletoPropostaChaincode - implementacao do chaincode
 type BoletoPropostaChaincode struct {
@@ -71,7 +69,6 @@ func main() {
 // 		Inicia/Reinicia a tabela de propostas
 // ============================================================================================================================
 func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//myLogger.Debug("Init Chaincode...")
 	fmt.Println("Init Chaincode...")
 
 	// Verificação da quantidade de argumentos recebidos
@@ -131,7 +128,6 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 // Only the owner of the specific asset can call this function.
 // An asset is any string to identify it. An owner is representated by one of his ECert/TCert.
 func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//myLogger.Debug("Invoke Chaincode...")
 	fmt.Println("Invoke Chaincode...")
 	fmt.Println("invoke is running " + function)
 
@@ -154,7 +150,6 @@ func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, funct
 // args[3]: beneficiarioAceitou. Status de aceite do Beneficiario da proposta
 // args[4]: boletoPago. Status do Pagamento do Boleto
 func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	//myLogger.Debug("registrarProposta...")
 	fmt.Println("registrarProposta...")
 
 	var jsonResp string
@@ -220,7 +215,6 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 		
 
 		if !ok && err == nil {
-			//myLogger.Errorf("system error %v", err)
 			jsonResp = "{\"atualizado\":\"" + "false" + "\"}"
 			return nil, errors.New("Falha ao atualizar a Proposta nº " + idProposta)
 		}
@@ -229,7 +223,6 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 		//*/
 	}
 
-	//myLogger.Debug("Proposta criada!")
 	fmt.Println("Proposta criada!")
 
 	jsonResp = "{\"registrado\":\"" + "true" + "\"}"
@@ -247,7 +240,6 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 // Funções suportadas:
 // "consultarProposta(Id)": para consultar uma proposta existente
 func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//myLogger.Debug("Query Chaincode...")
 	fmt.Println("Query Chaincode...")
 
 	fmt.Println("query is running " + function)
@@ -266,9 +258,7 @@ func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, functi
 // consultarProposta: função Query para consultar uma proposta existente, recebendo os seguintes argumentos
 // args[0]: Id. Hash da proposta
 func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	//myLogger.Debug("consultarProposta...")
 	fmt.Println("consultarProposta...")
-	//var listaPropostas []Proposta	// lista de Propostas
 	var resProposta Proposta		// Proposta
 	var propostaAsBytes []byte			// retorno do json em bytes
 	
@@ -307,9 +297,6 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	resProposta.PagadorAceitou = row.Columns[2].GetBool()
 	resProposta.BeneficiarioAceitou = row.Columns[3].GetBool()
 	resProposta.BoletoPago = row.Columns[4].GetBool()
-
-	// Inserir resultado na lista de propostas
-	//listaPropostas = append(listaPropostas, resProposta)
 
 	fmt.Println("Proposta: [%s], [%s], [%b], [%b], [%b]", resProposta.ID, resProposta.CpfPagador, resProposta.PagadorAceitou, resProposta.BeneficiarioAceitou, resProposta.BoletoPago)
 
