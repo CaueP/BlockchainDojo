@@ -29,13 +29,14 @@ import (
 	"fmt"
 	"strconv"	
 	"reflect"
-
 	
+	"log"
+	"bytes"	
 	"net/http"
-	"net/url"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/core/crypto/primitives"
+	"io/ioutil"
 )
 // "github.com/op/go-logging"
 //var myLogger = logging.MustGetLogger("dojo_mgm")
@@ -51,20 +52,6 @@ type Proposta struct {
 	PagadorAceitou 		bool 	`json:"pagador_aceitou"`
 	BeneficiarioAceitou bool 	`json:"beneficiario_aceitou"`
 	BoletoPago 			bool 	`json:"boleto_pago"`
-}
-
-// Struct NumVerify para testar uma API externa
-type Numverify struct {
-	Valid               bool   `json:"valid"`
-	Number              string `json:"number"`
-	LocalFormat         string `json:"local_format"`
-	InternationalFormat string `json:"international_format"`
-	CountryPrefix       string `json:"country_prefix"`
-	CountryCode         string `json:"country_code"`
-	CountryName         string `json:"country_name"`
-	Location            string `json:"location"`
-	Carrier             string `json:"carrier"`
-	LineType            string `json:"line_type"`
 }
 
 // consts associadas à tabela de Propostas
@@ -307,7 +294,7 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 		resProposta.BoletoPago = boletoPago
 
 		// Converte a proposta em json
-		var jsonStr = json.Marshal(resProposta)
+		jsonStr, err := json.Marshal(resProposta)
 
 		// define a URL do POST
 		url := "http://bc-desafio.mybluemix.net/atualizar"
@@ -317,16 +304,9 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 		if err != nil {
 			log.Fatal("NewRequest: ", err)
-			return
 		}
 		req.Header.Set("X-Custom-Header", "myvalue")
 		req.Header.Set("Content-Type", "application/json")
-
-		req, err := http.NewRequest("POST", url, nil)
-		if err != nil {
-			log.Fatal("NewRequest: ", err)
-			return
-		}
 
 
 		// For control over HTTP client headers,
