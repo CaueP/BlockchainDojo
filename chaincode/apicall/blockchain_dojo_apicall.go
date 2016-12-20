@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 /*
+Descrição: blockchain_dojo_cert.go com chamada de REST API externa ao atualizar uma proposta
 Implementação iniciada por Caue Garcia Polimanti
-blockchain_dojo com identificação do usuário que realizou a request
 */
 
 // nome do package

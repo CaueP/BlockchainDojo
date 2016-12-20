@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 /*
+Descrição: ponto de partida do desafio de blockchain
 Implementação iniciada por Caue Garcia Polimanti e Vitor Diego dos Santos de Sousa
 */
 

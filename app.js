@@ -20,7 +20,9 @@ var app = express();
 // serve the files out of ./public as our main files
 app.use(express.static(__dirname + '/public'));
 
+// usando o body parser para o json
 app.use(bodyParser.json());
+
 //Declarando um logger para verificar as rotas que estao sendo requisitadas.
 const logger = require('morgan'); 
 app.use(logger('dev')); 
@@ -31,7 +33,6 @@ var appEnv = cfenv.getAppEnv();
 
 
 /// rotas
-
 app.get('/', function (req, res) {
   res.send('Hello World!');
 }); 

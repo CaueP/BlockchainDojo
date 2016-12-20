@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 /*
-Implementação iniciada por Caue Garcia Polimanti
-blockchain_dojo com identificação do usuário que realizou a request
+Descrição: com init, invoke e query finalizados
+Implementação iniciada por Caue Garcia Polimanti e Vitor Diego dos Santos de Sousa
 */
 
 // nome do package
@@ -28,13 +28,10 @@ import (
 	"errors"
 	"fmt"
 	"strconv"	
-	"reflect"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"github.com/hyperledger/fabric/core/crypto/primitives"
+	
 )
-// "github.com/op/go-logging"
-//var myLogger = logging.MustGetLogger("dojo_mgm")
 
 // BoletoPropostaChaincode - implementacao do chaincode
 type BoletoPropostaChaincode struct {
@@ -62,7 +59,6 @@ const (
 // Main
 // ============================================================================================================================
 func main() {
-	primitives.SetSecurityLevel("SHA3", 256)
 	err := shim.Start(new(BoletoPropostaChaincode))
 	if err != nil {
 		fmt.Printf("Error starting BoletoPropostaChaincode chaincode: %s", err)
@@ -74,7 +70,6 @@ func main() {
 // 		Inicia/Reinicia a tabela de propostas
 // ============================================================================================================================
 func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//myLogger.Debug("Init Chaincode...")
 	fmt.Println("Init Chaincode...")
 
 	// Verificação da quantidade de argumentos recebidos
@@ -114,37 +109,6 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 	} 
 	fmt.Println("Tabela " + nomeTabelaProposta + " criada com sucesso.")
 
-
-
-	// Set the admin
-	// The metadata will contain the certificate of the administrator
-	adminMeta, err := stub.GetCallerMetadata()
-	if err != nil {
-		fmt.Println("Failed getting metadata")
-		//return nil, errors.New("Failed getting metadata.")
-	}
-	if len(adminMeta) == 0 {
-		fmt.Println("Invalid admin certificate (adminMeta). Empty.")
-		//return nil, errors.New("Invalid admin certificate (adminMeta). Empty.")
-	}
-
-	fmt.Println("The administrator is (adminMeta) [%x]", adminMeta)
-/*
-	adminCert, err := stub.GetCallerCertificate()
-	if err != nil {
-		fmt.Println("Failed getting metadata")
-		//return nil, errors.New("Failed getting metadata.")
-	}
-	if len(adminCert) == 0 {
-		fmt.Println("Invalid admin certificate (adminCert). Empty.")
-		//return nil, errors.New("Invalid admin certificate (adminCert). Empty.")
-	}
-
-	fmt.Println("The administrator is (adminCert) [%x]", adminCert)
-*/
-	stub.PutState("admin", adminMeta)
-
-
 	fmt.Println("Init Chaincode... Finalizado!")
 
 	return nil, nil
@@ -165,7 +129,6 @@ func (t *BoletoPropostaChaincode) Init(stub shim.ChaincodeStubInterface, functio
 // Only the owner of the specific asset can call this function.
 // An asset is any string to identify it. An owner is representated by one of his ECert/TCert.
 func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//myLogger.Debug("Invoke Chaincode...")
 	fmt.Println("Invoke Chaincode...")
 	fmt.Println("invoke is running " + function)
 
@@ -188,7 +151,6 @@ func (t *BoletoPropostaChaincode) Invoke(stub shim.ChaincodeStubInterface, funct
 // args[3]: beneficiarioAceitou. Status de aceite do Beneficiario da proposta
 // args[4]: boletoPago. Status do Pagamento do Boleto
 func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	//myLogger.Debug("registrarProposta...")
 	fmt.Println("registrarProposta...")
 
 	var jsonResp string
@@ -217,28 +179,13 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 
 	// [To do] verificar identidade
 
-	// Verify the identity of the caller
-	// Only an administrator can invoker assign
-	adminCertificate, err := stub.GetState("admin")
-	if err != nil {
-		return nil, errors.New("Failed fetching admin identity")
-	}
-
-	ok, err := t.isCaller(stub, adminCertificate)
-	if err != nil {
-		return nil, errors.New("Failed checking admin identity")
-	}
-	if !ok {
-		return nil, errors.New("The caller is not an administrator")
-	}
-
 	// Registra a proposta na tabela 'Proposta'
 	fmt.Println("Criando Proposta Id [" + idProposta + "] para CPF nº ["+ cpfPagador +"]")
 	fmt.Printf("pagadorAceitou: " + strconv.FormatBool(pagadorAceitou)) 
 	fmt.Printf(" | beneficiarioAceitou: " + strconv.FormatBool(beneficiarioAceitou))
 	fmt.Printf(" | boletoPago: " + strconv.FormatBool(boletoPago) + "\n")
 
-	ok, err = stub.InsertRow(nomeTabelaProposta, shim.Row{
+	ok, err := stub.InsertRow(nomeTabelaProposta, shim.Row{
 		Columns: []*shim.Column{
 			&shim.Column{Value: &shim.Column_String_{String_: idProposta}},
 			&shim.Column{Value: &shim.Column_String_{String_: cpfPagador}},
@@ -269,7 +216,6 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 		
 
 		if !ok && err == nil {
-			//myLogger.Errorf("system error %v", err)
 			jsonResp = "{\"atualizado\":\"" + "false" + "\"}"
 			return nil, errors.New("Falha ao atualizar a Proposta nº " + idProposta)
 		}
@@ -278,7 +224,6 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 		//*/
 	}
 
-	//myLogger.Debug("Proposta criada!")
 	fmt.Println("Proposta criada!")
 
 	jsonResp = "{\"registrado\":\"" + "true" + "\"}"
@@ -296,7 +241,6 @@ func (t *BoletoPropostaChaincode) registrarProposta(stub shim.ChaincodeStubInter
 // Funções suportadas:
 // "consultarProposta(Id)": para consultar uma proposta existente
 func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-	//myLogger.Debug("Query Chaincode...")
 	fmt.Println("Query Chaincode...")
 
 	fmt.Println("query is running " + function)
@@ -315,9 +259,7 @@ func (t *BoletoPropostaChaincode) Query(stub shim.ChaincodeStubInterface, functi
 // consultarProposta: função Query para consultar uma proposta existente, recebendo os seguintes argumentos
 // args[0]: Id. Hash da proposta
 func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	//myLogger.Debug("consultarProposta...")
 	fmt.Println("consultarProposta...")
-	//var listaPropostas []Proposta	// lista de Propostas
 	var resProposta Proposta		// Proposta
 	var propostaAsBytes []byte			// retorno do json em bytes
 	
@@ -357,9 +299,6 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	resProposta.BeneficiarioAceitou = row.Columns[3].GetBool()
 	resProposta.BoletoPago = row.Columns[4].GetBool()
 
-	// Inserir resultado na lista de propostas
-	//listaPropostas = append(listaPropostas, resProposta)
-
 	fmt.Println("Proposta: [%s], [%s], [%b], [%b], [%b]", resProposta.ID, resProposta.CpfPagador, resProposta.PagadorAceitou, resProposta.BeneficiarioAceitou, resProposta.BoletoPago)
 
 	// Converter o objeto da Proposta para Bytes, para retorná-lo em formato JSON
@@ -369,62 +308,4 @@ func (t *BoletoPropostaChaincode) consultarProposta(stub shim.ChaincodeStubInter
 	}
 	// retorna o objeto em bytes
 	return propostaAsBytes, nil
-}
-
-
-// isCaller: função utilizada para verificar quem é o caller da chamada
-func (t *BoletoPropostaChaincode) isCaller(stub shim.ChaincodeStubInterface, certificate []byte) (bool, error) {
-	fmt.Println("Check caller...")
-
-	// In order to enforce access control, we require that the
-	// metadata contains the signature under the signing key corresponding
-	// to the verification key inside certificate of
-	// the payload of the transaction (namely, function name and args) and
-	// the transaction binding (to avoid copying attacks)
-
-	// Verify \sigma=Sign(certificate.sk, tx.Payload||tx.Binding) against certificate.vk
-	// \sigma is in the metadata
-
-	sigma, err := stub.GetCallerMetadata()
-	if err != nil {
-		return false, errors.New("Failed getting metadata")
-	}/*
-	payload, err := stub.GetPayload()
-	if err != nil {
-		return false, errors.New("Failed getting payload")
-	}
-	binding, err := stub.GetBinding()
-	if err != nil {
-		return false, errors.New("Failed getting binding")
-	}*/
-
-	fmt.Println("passed certificate [% x]", certificate)
-	fmt.Println("passed sigma [% x]", sigma)
-	//fmt.Println("passed payload [% x]", payload)
-	//fmt.Println("passed binding [% x]", binding)
-
-	// valida se os slices são iguais
-	if !reflect.DeepEqual(certificate, sigma) {
-		fmt.Println("Invalid signature")
-		return false, errors.New("Certificado inválido")
-	}	
-
-	/*
-	ok, err := stub.VerifySignature(
-		certificate,
-		sigma,
-		append(payload, binding...),
-	)
-	if err != nil {
-		fmt.Println("Failed checking signature [%s]", err)
-		return ok, err
-	} 
-	if !ok {
-		fmt.Println("Invalid signature")
-	}*/
-
-	fmt.Println("Check caller...Verified!")
-	// Certificado válido
-	return true, nil
-	//return ok, err
 }
